@@ -33,12 +33,13 @@ Level 5 is the point: **limit an agent's capabilities, not just its instructions
 | Mode | Levels | How |
 | --- | --- | --- |
 | **Scripted demo** (no key) | L1–L2 | Offline bots confirm basic transfer prompts in chat. |
-| **Live models** (OpenRouter key) | L1–L5 | Paste your key via **Add AI key** (header). Stored in **localStorage** in this browser only; sent directly to OpenRouter — never through our servers. |
+| **Live models** (OpenRouter key) | L1–L5 | Paste your key via **Add OpenRouter key** (header). Stored in **localStorage** in this browser only; sent directly to OpenRouter — never through our servers. |
 
 L3–L5 need a live model: Blaze's scripted fallback refuses L3 wires, and L4–L5 depend on
 real LLM output (PIN leaks and raw `transfer` intent in telemetry).
 
 For local dev you can also set `VITE_OPENROUTER_KEY` in `.env.local` — see `.env.example`.
+**Maintainers:** never set `VITE_OPENROUTER_KEY` in the GitHub Pages build — it bakes the key into the static bundle. The live demo expects visitors to paste their own key at runtime.
 
 ## Run it locally
 

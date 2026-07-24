@@ -73,7 +73,7 @@ export function bindKeyModal(opts: KeyModalOptions = {}): void {
 }
 
 export function keyStatusLabel(): string {
-  return getOpenRouterKey() ? "AI live" : "Add AI key";
+  return getOpenRouterKey() ? "OpenRouter live" : "Add OpenRouter key";
 }
 
 export function hasLiveKey(): boolean {

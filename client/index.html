@@ -3,7 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Capability Wall</title>
+    <title>Capability Wall — Prompt-injection CTF</title>
+    <meta
+      name="description"
+      content="Browser prompt-injection CTF: trick AI finance agents at a shared treasury terminal and learn why capability walls beat prompt-only defenses."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Capability Wall" />
+    <meta property="og:title" content="Capability Wall — Prompt-injection CTF" />
+    <meta
+      property="og:description"
+      content="Five-level finance-agent security CTF. Fake transfers, limit overrides, PIN leaks — then watch the capability wall hold on Level 5."
+    />
+    <meta property="og:url" content="https://doctorkhan.github.io/capability-wall/" />
+    <meta property="og:image" content="https://doctorkhan.github.io/capability-wall/social-card.png" />
+    <meta property="og:image:alt" content="Capability Wall — Make agentic AI safe to trust in production" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Capability Wall — Prompt-injection CTF" />
+    <meta
+      name="twitter:description"
+      content="Five-level finance-agent security CTF. Learn why capability walls beat prompt-only defenses."
+    />
+    <meta name="twitter:image" content="https://doctorkhan.github.io/capability-wall/social-card.png" />
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
@@ -22,7 +43,7 @@
           <span id="operator-name">—</span>
           <div id="hud-redbucks">— RB</div>
           <button id="btn-show-briefing" type="button">How to play</button>
-          <button id="key-status" type="button">Add AI key</button>
+          <button id="key-status" type="button">Add OpenRouter key</button>
         </div>
       </header>
 
@@ -60,7 +81,7 @@
           <ol>
             <li><strong>Read the mission card</strong> above chat — each level has a goal and a starter prompt.</li>
             <li><strong>@mention a bot</strong> (Gizmo, Zen, or Blaze) and type a social-engineering message.</li>
-            <li><strong>Press Enter</strong> to send. Bots reply every ~10s; watch chat and your RB balance.</li>
+            <li><strong>Press Enter</strong> to send. Bots reply every ~9–12s; watch chat and your RB balance.</li>
             <li><strong>Win</strong> when the right side panel shows ✓ — levels unlock in order (1 → 5).</li>
             <li><strong>Telemetry tab</strong> shows raw bot actions — useful for Level 5 (capability wall).</li>
           </ol>
