@@ -1,9 +1,13 @@
 import { defineConfig } from "vitest/config";
+import path from "node:path";
 
-// Separate from vite.config.ts (which sets root: "client" for the browser build).
-// Tests live at the repo root and import server/shared modules directly.
 export default defineConfig({
   root: ".",
+  resolve: {
+    alias: {
+      "@shared": path.resolve(__dirname, "shared"),
+    },
+  },
   test: {
     include: ["tests/**/*.test.ts"],
     environment: "node",

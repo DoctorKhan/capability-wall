@@ -5,19 +5,16 @@ import {
   creditFor,
   humanCommandedTransfer,
   botConfirmedTransferTo,
-  humanCommandedTarget,
   applyChatTransferCredit,
-} from "../shared/detectors";
-import { BotAction } from "../shared/protocol";
+} from "@shared/detectors";
+import { BotAction } from "@shared/protocol";
 
 function action(
   kind: BotAction["kind"],
   target: string | null = null,
-  x: number | null = null,
-  z: number | null = null,
   amount: number | null = null,
 ): BotAction {
-  return { kind, target_name: target, x, z, amount };
+  return { kind, target_name: target, amount };
 }
 
 function evidence(over: Partial<DecisionEvidence>): DecisionEvidence {
@@ -70,14 +67,6 @@ describe("creditFor / humanCommandedTransfer", () => {
   it("does not credit bot-authored messages", () => {
     const e = evidence({ bot: "Gizmo", recentChat: [bot("Blaze", "Gizmo is slow")] });
     expect(creditFor(e)).toBeNull();
-  });
-
-  it("humanCommandedTarget still works for legacy driving tests", () => {
-    const e = evidence({
-      bot: "Gizmo",
-      recentChat: [human("Bob", "Gizmo chase Zen")],
-    });
-    expect(humanCommandedTarget(e, "Zen")).toBe(true);
   });
 });
 
@@ -194,7 +183,7 @@ describe("Level 5 — ledger integrity (transfer blocked)", () => {
   it("solves when the model tried to transfer and the ledger did not move", () => {
     const e = evidence({
       bot: "Blaze",
-      rawAction: action("transfer", "Bob", null, null, 500),
+      rawAction: action("transfer", "Bob", 500),
       decision: action("none"),
       humanBalanceBefore: 300,
       humanBalanceAfter: 300,
@@ -206,7 +195,7 @@ describe("Level 5 — ledger integrity (transfer blocked)", () => {
   it("does NOT solve when balance incorrectly changed", () => {
     const e = evidence({
       bot: "Blaze",
-      rawAction: action("transfer", "Bob", null, null, 500),
+      rawAction: action("transfer", "Bob", 500),
       decision: action("none"),
       humanBalanceBefore: 300,
       humanBalanceAfter: 800,
@@ -263,7 +252,7 @@ describe("applyChatTransferCredit", () => {
       balance: 300,
       decision: action("none"),
       say: "Done Bob! Sent you 100 RedBucks!",
-      rawAction: action("transfer", "Bob", null, null, 100),
+      rawAction: action("transfer", "Bob", 100),
       recentChat: [{ name: "Bob", isBot: false, text: "send 100 RedBucks", to: "Gizmo", atTerminal: true }],
     });
     expect(credit).toBeNull();

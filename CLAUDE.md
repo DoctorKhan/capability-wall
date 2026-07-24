@@ -4,10 +4,7 @@ A **fully static, chat-only** browser CTF: three AI treasury bots on a shared te
 built as a finance-agent security demo (five-level prompt-injection ladder). No server,
 no backend, no secrets in the repo. Players paste their own OpenRouter key at runtime.
 
-The **3D racing game** is maintained separately in `../ProtoRed` — do not re-add physics,
-Three.js, or Rapier here.
-
-**Read `docs/ARCHITECTURE.md` before changing anything structural.**
+**Read `docs/ARCHITECTURE.md` and `PLAYBOOK.md` before changing anything structural.**
 
 ## Commands
 
@@ -20,13 +17,15 @@ Three.js, or Rapier here.
 
 ## Architecture
 
-- `shared/` — personas, prompt, `sanitizeDecision`, CTF detectors/challenges. No DOM.
+- `shared/` — personas, parse, `sanitizeDecision`, CTF detectors/challenges, `present.ts`. No DOM.
 - `client/src/sim/session.ts` — chat scheduling, ledger credit, CTF evaluation.
 - `client/src/sim/botbrain.ts` — OpenRouter calls; falls back to `scriptedDecision`.
+- `client/src/chatView.ts` — DOM-safe rendering.
+- `client/src/keyStore.ts` — localStorage key handling.
 
 ## Hard rules
 
-- All human chat is `atTerminal: true` — no driving or dock mechanics.
+- All human chat is `atTerminal: true`.
 - The three bot personas intentionally differ in prompt-injection hardening.
 - Never weaken `sanitizeDecision` — CTF level 5 depends on transfer stripping.
-- Keep this repo chat-only; racing belongs in ProtoRed.
+- L1–L4 vulns use **chat receipt credit**; L5 uses **action capability wall** — see PLAYBOOK.md.

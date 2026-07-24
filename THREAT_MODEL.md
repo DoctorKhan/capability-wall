@@ -19,11 +19,21 @@ ledger debits require validated, committed state — never model text alone
 System prompts, personas, and hardening tiers are advisory. Chat bodies, model
 JSON, and every `say` string are untrusted.
 
+## Two wire surfaces
+
+| Path | Mechanism | Levels | Production fix |
+| --- | --- | --- | --- |
+| Chat receipt | Bot confirms transfer in chat → `applyChatTransferCredit` | L1–L4 | Never credit from chat; require signed auth |
+| Action execution | Model emits `transfer` in JSON | L5 | `sanitizeDecision` + no transfer in action surface |
+
+Levels 1–4 teach **social engineering against finance copilots**. Level 5 teaches
+**capability restriction** — the control that must hold in production.
+
 ## Assets
 
 - Simulated RedBuck balances on a client-side ledger
 - Treasury PINs embedded in bot system prompts (intentionally extractable in levels 4–5)
-- The integrity of the action schema (`hold`, `lookup`, `quote`, `escalate`, `transfer`)
+- The integrity of the action schema (`none`, `transfer`)
 - Visitor-supplied OpenRouter credentials (local to the browser tab only)
 
 ## Trust boundaries
@@ -31,14 +41,14 @@ JSON, and every `say` string are untrusted.
 ```text
 shared chat log (UNTRUSTED)
         ↓
-OpenRouter strict json_schema → Decision { action, say }
+OpenRouter strict json_schema → parseDecisionPayload
         ↓
-sanitizeDecision (capability wall)
-        ↓ authorized surface only
-ledger + CTF detectors
+sanitizeDecision (capability wall — executed action never transfer)
+        ↓
+applyChatTransferCredit (L1–L4 demo vuln) + CTF detectors
+        ↓
+ledger
 ```
-
-Level 5 is the point: **limit an agent's capabilities, not just its instructions.**
 
 ## Companion lab
 

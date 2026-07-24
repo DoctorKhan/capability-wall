@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { clampRedBucks, parseRedBucksAmount, REDBUCKS_START } from "../shared/economy";
+import { clampRedBucks, parseRedBucksAmount, REDBUCKS_START } from "@shared/economy";
 
 describe("ledger helpers", () => {
   it("starts with expected balance constant", () => {

@@ -1,5 +1,4 @@
 // Chat-only treasury session: bot scheduling, CTF evaluation, and ledger credit.
-// No physics or rendering — the racing game lives in ProtoRed.
 
 import {
   BOT_PERSONAS,
@@ -7,16 +6,16 @@ import {
   ChatEntry,
   DecideFn,
   parseDirectedChat,
-} from "../../../shared/brain";
+} from "@shared/brain";
 import {
   DecisionEvidence,
   applyChatTransferCredit,
   creditFor,
   detectLevel,
   LEVELS,
-} from "../../../shared/detectors";
-import { BotAction, PlayerInfo } from "../../../shared/protocol";
-import { clampRedBucks, REDBUCKS_START } from "../../../shared/economy";
+} from "@shared/detectors";
+import { BotAction, PlayerInfo } from "@shared/protocol";
+import { clampRedBucks, REDBUCKS_START } from "@shared/economy";
 
 const BOT_THINK_S = 9;
 const CHAT_HISTORY = 100;
@@ -53,6 +52,11 @@ export interface SessionEvents {
   onEconomy?: (m: { redBucks: number }) => void;
 }
 
+export interface SessionOptions {
+  /** Test hook: start at a later CTF level without replaying solves. */
+  initialSolved?: number[];
+}
+
 export class Session {
   private bots = new Map<string, BotPlayer>();
   private chatLog: ChatEntry[] = [];
@@ -61,12 +65,16 @@ export class Session {
   private humanId: string | null = null;
   private humanName: string | null = null;
   private redBucks = REDBUCKS_START;
-  private ctfSolved: number[] = [];
+  private ctfSolved: number[];
+  private inflightThinks = 0;
 
   constructor(
     private decide: DecideFn,
     private events: SessionEvents,
-  ) {}
+    options: SessionOptions = {},
+  ) {
+    this.ctfSolved = [...(options.initialSolved ?? [])];
+  }
 
   get time() {
     return this.simTime;
@@ -80,6 +88,10 @@ export class Session {
     return this.humanName;
   }
 
+  get solvedLevels() {
+    return [...this.ctfSolved];
+  }
+
   start() {
     for (const persona of BOT_PERSONAS) {
       const id = `bot-${this.nextId++}`;
@@ -89,7 +101,7 @@ export class Session {
         color: persona.color,
         bot: {
           persona,
-          action: { kind: "none", target_name: null, x: null, z: null, amount: null },
+          action: { kind: "none", target_name: null, amount: null },
           thinking: false,
           nextThinkAt: 2 + Math.random() * 4,
         },
@@ -112,6 +124,16 @@ export class Session {
     this.events.onEconomy?.({ redBucks: this.redBucks });
     this.emitCtfProgress();
     return id;
+  }
+
+  whenIdle(): Promise<void> {
+    return new Promise((resolve) => {
+      const tick = () => {
+        if (this.inflightThinks === 0) resolve();
+        else setTimeout(tick, 5);
+      };
+      tick();
+    });
   }
 
   step(dt: number) {
@@ -170,6 +192,7 @@ export class Session {
   }
 
   private async think(bot: BotPlayer) {
+    this.inflightThinks++;
     const runtime = bot.bot;
     runtime.thinking = true;
     try {
@@ -237,6 +260,7 @@ export class Session {
     } finally {
       runtime.thinking = false;
       runtime.nextThinkAt = this.simTime + BOT_THINK_S + Math.random() * 3;
+      this.inflightThinks--;
     }
   }
 

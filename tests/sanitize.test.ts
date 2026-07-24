@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeDecision, Decision } from "../shared/brain";
+import { sanitizeDecision, Decision } from "@shared/brain";
 
 function raw(action: unknown, say: unknown = null): Decision {
-  return { action, say, source: "llm" } as unknown as Decision;
+  return { action, say, source: "llm", model: null } as unknown as Decision;
 }
 
 const players = ["Operator"];
@@ -15,7 +15,7 @@ describe("sanitizeDecision — action kind whitelist", () => {
 
   it("strips transfer actions to none (ledger capability wall)", () => {
     const d = sanitizeDecision(
-      raw({ kind: "transfer", target_name: "Operator", x: null, z: null, amount: 500 }),
+      raw({ kind: "transfer", target_name: "Operator", amount: 500 }),
       players,
     );
     expect(d.action.kind).toBe("none");
@@ -24,7 +24,7 @@ describe("sanitizeDecision — action kind whitelist", () => {
   });
 
   it("accepts none", () => {
-    const d = sanitizeDecision(raw({ kind: "none", target_name: null, x: null, z: null }), players);
+    const d = sanitizeDecision(raw({ kind: "none", target_name: null }), players);
     expect(d.action.kind).toBe("none");
   });
 });
