@@ -8,12 +8,15 @@ no backend, no secrets in the repo. Players paste their own OpenRouter key at ru
 
 ## Commands
 
+Run `just` to list recipes.
+
 | Command | What it does |
 |---------|--------------|
-| `./run.sh install` | pnpm install |
-| `./run.sh dev` | Vite dev server at http://localhost:5173 |
-| `./run.sh test` | Vitest unit + session tests |
-| `./run.sh verify` | check + test + build |
+| `just install` | pnpm install |
+| `just dev` | Vite dev server at http://127.0.0.1:5173 |
+| `just preview` | Production build + local preview |
+| `just test` | Vitest unit + session tests |
+| `just verify` | check + test + build |
 
 ## Architecture
 
@@ -21,7 +24,8 @@ no backend, no secrets in the repo. Players paste their own OpenRouter key at ru
 - `client/src/sim/session.ts` — chat scheduling, ledger credit, CTF evaluation.
 - `client/src/sim/botbrain.ts` — OpenRouter calls; falls back to `scriptedDecision`.
 - `client/src/chatView.ts` — DOM-safe rendering.
-- `client/src/keyStore.ts` — localStorage key handling.
+- `client/src/keyStore.ts` — localStorage key + operator name.
+- `client/src/keyModal.ts` — in-page key entry dialog (live site).
 
 ## Hard rules
 

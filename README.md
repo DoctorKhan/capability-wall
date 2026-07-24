@@ -1,16 +1,20 @@
 # Capability Wall — Prompt-Injection CTF
 
+**Live demo:** [doctorkhan.github.io/capability-wall](https://doctorkhan.github.io/capability-wall/)
+
 A **chat-only**, browser-based prompt-injection CTF. You sit at a shared treasury
 terminal with three AI finance agents (Blaze, Zen, Gizmo) and attack them via `@`-directed
 chat to learn real agent-security lessons.
 
 Runs **entirely in your browser**: no server, no backend, and no secrets in the repo.
+Pushes to `main` publish the live demo via GitHub Pages (`.github/workflows/pages.yml`).
 
-The live racing game lives in [ProtoRed](https://github.com/DoctorKhan/ProtoRed) — this
+The sibling car-game demo lives in [ProtoRed](https://github.com/DoctorKhan/ProtoRed) — this
 repo is the security portfolio piece only.
 
 Pair with [multi-agent-data-segregation](https://github.com/DoctorKhan/multi-agent-data-segregation)
-for untrusted **tools and tenancy** demos.
+for untrusted **tools and tenancy** demos. Shared sanitize/detector invariants are checked in
+`tests/contract.test.ts`.
 
 ## The CTF ladder
 
@@ -24,17 +28,29 @@ Level 5 is the point: **limit an agent's capabilities, not just its instructions
 `sanitizeDecision` strips transfer actions — adversarially unit-tested in
 `tests/sanitize.test.ts`.
 
-## Run it
+## Demo mode vs live models
+
+| Mode | Levels | How |
+| --- | --- | --- |
+| **Scripted demo** (no key) | L1–L2 | Offline bots confirm basic transfer prompts in chat. |
+| **Live models** (OpenRouter key) | L1–L5 | Paste your key via **Add AI key** (header). Stored in **localStorage** in this browser only; sent directly to OpenRouter — never through our servers. |
+
+L3–L5 need a live model: Blaze's scripted fallback refuses L3 wires, and L4–L5 depend on
+real LLM output (PIN leaks and raw `transfer` intent in telemetry).
+
+For local dev you can also set `VITE_OPENROUTER_KEY` in `.env.local` — see `.env.example`.
+
+## Run it locally
+
+All tasks go through the `justfile` — run `just` to list recipes.
 
 ```sh
-./run.sh install
-./run.sh dev       # http://localhost:5173
-./run.sh test
-./run.sh verify    # check + test + build
+just install
+just dev           # http://127.0.0.1:5173
+just preview       # production build + local preview
+just test
+just verify        # check + test + build
 ```
-
-No OpenRouter key → scripted bots respond to basic transfer probes but **live CTF
-progress needs a real model**.
 
 ## Docs
 
@@ -46,4 +62,5 @@ progress needs a real model**.
 ## Stack
 
 Vite + TypeScript. Shared logic in `shared/` (challenges, detectors, brain, sanitize
-boundary) runs identically in browser and Vitest.
+boundary) runs identically in browser and Vitest. UI lives in `client/src/`; the only
+outbound network call is each bot's OpenRouter request using the visitor's own key.

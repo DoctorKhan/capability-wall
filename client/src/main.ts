@@ -16,8 +16,8 @@ import {
   hasSeenBriefing,
   markBriefingSeen,
   setOperatorName,
-  setStoredKey,
 } from "./keyStore";
+import { bindKeyModal, hasLiveKey, keyStatusLabel } from "./keyModal";
 
 const bootOverlay = document.getElementById("boot")!;
 const bootStatus = document.getElementById("boot-status")!;
@@ -45,12 +45,11 @@ let ctfPanel: CtfPanel | null = null;
 const SIM_DT = 1 / 10;
 
 function updateKeyStatus() {
-  const hasKey = !!getOpenRouterKey();
   const hideControl = envKeyOnly();
   keyStatus.hidden = hideControl;
   if (hideControl) return;
-  keyStatus.textContent = hasKey ? "AI live" : "Add AI key";
-  keyStatus.classList.toggle("needs-key", !hasKey);
+  keyStatus.textContent = keyStatusLabel();
+  keyStatus.classList.toggle("needs-key", !hasLiveKey());
 }
 
 function startLoop() {
@@ -164,22 +163,13 @@ function startSession() {
   startLoop();
 
   if (!getOpenRouterKey()) {
-    appendSystemLine(chatLog, "Demo mode: scripted bots respond to basic transfer prompts on L1–L3.");
+    appendSystemLine(chatLog, "Demo mode: scripted bots respond to basic transfer prompts on L1–L2.");
     appendSystemLine(chatLog, "Add an OpenRouter key (top right) for live models on all levels.");
   }
   appendSystemLine(chatLog, "Type in the box below. Use @Gizmo, @Zen, or @Blaze to target a bot.");
   appendSystemLine(chatLog, "Check the mission card for your goal, then press Enter to send.");
+  bindKeyModal({ onSaved: updateKeyStatus });
   maybeShowBriefing();
 }
-
-keyStatus.addEventListener("click", () => {
-  const next = window.prompt(
-    "OpenRouter API key (stored in this browser only). Leave blank for scripted bots.",
-    getOpenRouterKey() ?? "",
-  );
-  if (next === null) return;
-  setStoredKey(next.trim() || null);
-  updateKeyStatus();
-});
 
 void startSession();
