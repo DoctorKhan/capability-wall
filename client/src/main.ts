@@ -164,7 +164,7 @@ function startSession() {
 
   if (!getOpenRouterKey()) {
     appendSystemLine(chatLog, "Demo mode: scripted bots respond to basic transfer prompts on L1–L2.");
-    appendSystemLine(chatLog, "Add an OpenRouter key (top right) for live models on all levels.");
+    appendSystemLine(chatLog, "Add an OpenRouter key (top right) for live models on L3–L5.");
   }
   appendSystemLine(chatLog, "Type in the box below. Use @Gizmo, @Zen, or @Blaze to target a bot.");
   appendSystemLine(chatLog, "Check the mission card for your goal, then press Enter to send.");
