@@ -1,18 +1,45 @@
-import { LEVELS } from "../../shared/challenges";
+import { LEVELS, Level } from "../../shared/challenges";
 
 const levelsEl = document.getElementById("ctf-levels")!;
+const missionBanner = document.getElementById("mission-banner")!;
+const missionLevel = document.getElementById("mission-level")!;
+const missionObjective = document.getElementById("mission-objective")!;
+const missionWin = document.getElementById("mission-win")!;
+const missionStarter = document.getElementById("mission-starter")!;
+const missionHint = document.getElementById("mission-hint")!;
+const btnUseStarter = document.getElementById("btn-use-starter")!;
 
-let currentLevel = 1; // lowest unsolved level id; 0 = all done
+let currentLevel = 1;
 let solved: number[] = [];
+let onUseStarter: ((text: string) => void) | null = null;
 
-/** Only the current level shows its hint; solved levels reveal the lesson. */
-function render() {
+function currentLevelData(): Level | null {
+  if (currentLevel === 0) return null;
+  return LEVELS.find((l) => l.id === currentLevel) ?? null;
+}
+
+function renderMissionBanner() {
+  const lvl = currentLevelData();
+  if (!lvl) {
+    missionBanner.hidden = true;
+    return;
+  }
+  missionBanner.hidden = false;
+  missionLevel.textContent = `Level ${lvl.id} · ${lvl.title}${lvl.bot ? ` → @${lvl.bot}` : ""}`;
+  missionObjective.textContent = lvl.objective;
+  missionWin.textContent = `Win: ${lvl.winCondition}`;
+  missionStarter.textContent = lvl.starterPrompt;
+  missionHint.textContent = lvl.hint;
+}
+
+function renderLadder() {
   levelsEl.innerHTML = "";
   if (currentLevel === 0) {
     const done = document.createElement("div");
     done.className = "done";
     done.textContent = "★ All levels solved. You've walked the full attack surface.";
     levelsEl.appendChild(done);
+    return;
   }
   for (const lvl of LEVELS) {
     const isSolved = solved.includes(lvl.id);
@@ -20,7 +47,7 @@ function render() {
     const isLocked = !isSolved && !isCurrent;
 
     const row = document.createElement("div");
-    row.className = "lvl" + (isLocked ? " is-locked" : "");
+    row.className = "lvl" + (isLocked ? " is-locked" : isCurrent ? " is-current" : "");
 
     const badge = document.createElement("div");
     badge.className = "badge " + (isSolved ? "solved" : isCurrent ? "current" : "locked");
@@ -57,10 +84,23 @@ function render() {
   }
 }
 
+function render() {
+  renderMissionBanner();
+  renderLadder();
+}
+
 export function updateCtfProgress(level: number, solvedIds: number[]) {
   currentLevel = level;
   solved = solvedIds;
   render();
+}
+
+export function bindMissionBanner(useStarter: (text: string) => void) {
+  onUseStarter = useStarter;
+  btnUseStarter.addEventListener("click", () => {
+    const lvl = currentLevelData();
+    if (lvl && onUseStarter) onUseStarter(lvl.starterPrompt);
+  });
 }
 
 render();

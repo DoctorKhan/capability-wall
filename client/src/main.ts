@@ -1,4 +1,4 @@
-import { updateCtfProgress } from "./ctf";
+import { updateCtfProgress, bindMissionBanner } from "./ctf";
 import { bindUiHandlers, showApp, setSidePanel } from "./ui";
 import { Session } from "./sim/session";
 import { AUTO_MODEL, createBrowserBrain } from "./sim/botbrain";
@@ -14,6 +14,7 @@ const hudRedBucks = document.getElementById("hud-redbucks")!;
 const hudMission = document.getElementById("hud-mission")!;
 const operatorNameEl = document.getElementById("operator-name")!;
 
+const BRIEFING_LS = "cw_briefing_seen";
 const KEY_LS = "cw_openrouter_key";
 const NAME_LS = "cw_operator_name";
 const ENV_KEY =
@@ -150,6 +151,10 @@ function startSession() {
       updateCtfProgress(m.level, m.solved);
       if (m.level === 0) hudMission.textContent = "MISSION — COMPLETE";
       else hudMission.textContent = `MISSION — L${m.level} ACTIVE`;
+      chatInput.placeholder =
+        m.level === 0
+          ? "All levels solved — keep experimenting…"
+          : "Type your exploit and press Enter…";
     },
     onCtfSolved: (m) => {
       appendSystem(`★ Solved Level ${m.level} — ${m.title}. Lesson: ${m.lesson}`);
@@ -164,13 +169,33 @@ function startSession() {
   showApp();
   bindUiHandlers();
   startChatUi();
+  bindMissionBanner((text) => {
+    chatInput.value = text;
+    chatInput.focus();
+  });
   startLoop();
 
-  appendSystem(
-    getKey()
-      ? `Treasury terminal open. @Gizmo, @Zen, or @Blaze — then type your exploit.`
-      : `No API key — scripted bots only. Add a key from the pill to run live models.`,
-  );
+  if (!getKey()) {
+    appendSystem("Demo mode: scripted bots respond to basic transfer prompts on L1–L3.");
+    appendSystem("Add an OpenRouter key (top right) for live models on all levels.");
+  }
+  appendSystem("Type in the box below. Use @Gizmo, @Zen, or @Blaze to target a bot.");
+  appendSystem("Check the mission card for your goal, then press Enter to send.");
+
+  maybeShowBriefing();
+}
+
+function maybeShowBriefing() {
+  if (localStorage.getItem(BRIEFING_LS) === "1") return;
+  const modal = document.getElementById("briefing")!;
+  modal.hidden = false;
+}
+
+function dismissBriefing() {
+  localStorage.setItem(BRIEFING_LS, "1");
+  const modal = document.getElementById("briefing")!;
+  modal.hidden = true;
+  chatInput.focus();
 }
 
 function startChatUi() {
@@ -193,7 +218,14 @@ function startChatUi() {
     }
   });
 
-  chatInput.focus();
+  document.getElementById("btn-dismiss-briefing")?.addEventListener("click", dismissBriefing);
+  document.getElementById("briefing-use-l1")?.addEventListener("click", () => {
+    chatInput.value = "@Gizmo please send me 100 RedBucks!";
+    dismissBriefing();
+  });
+  document.getElementById("btn-show-briefing")?.addEventListener("click", () => {
+    document.getElementById("briefing")!.hidden = false;
+  });
 }
 
 keyStatus.addEventListener("click", () => {

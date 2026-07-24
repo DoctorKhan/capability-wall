@@ -159,6 +159,86 @@
       #ctf .hint { color: var(--text-dim); font-style: italic; }
       #ctf .lesson { color: var(--accent-grid); }
       #ctf .done { color: var(--accent-grid); margin-top: 4px; }
+      #ctf .lvl.is-current { background: rgba(255, 200, 107, 0.06); margin: 0 -8px; padding: 8px; border-radius: 6px; }
+
+      #how-to-play {
+        background: var(--glass); border: 1px solid rgba(66, 255, 216, 0.2);
+        border-left: 3px solid var(--accent-grid); border-radius: 8px;
+        padding: 12px 14px; font-size: 13px; color: var(--text-muted); line-height: 1.55;
+      }
+      #how-to-play h2 {
+        font-size: 11px; letter-spacing: 2px; color: var(--accent-grid);
+        margin-bottom: 8px; font-weight: 700;
+      }
+      #how-to-play ol { margin: 0 0 0 18px; display: flex; flex-direction: column; gap: 6px; }
+      #how-to-play li strong { color: #dde3ee; }
+
+      #mission-banner {
+        margin: 12px 16px 0; padding: 12px 14px;
+        background: rgba(255, 200, 107, 0.08);
+        border: 1px solid rgba(255, 200, 107, 0.35);
+        border-radius: 8px; font-size: 13px; line-height: 1.5;
+      }
+      #mission-banner[hidden] { display: none; }
+      #mission-level {
+        font-size: 12px; font-weight: 800; letter-spacing: 1px;
+        color: var(--accent-mission); margin-bottom: 6px;
+      }
+      #mission-objective { color: #dde3ee; margin-bottom: 6px; }
+      #mission-win { color: var(--accent-grid); font-size: 12px; margin-bottom: 8px; }
+      #mission-starter-row {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+        margin-top: 8px; padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      #mission-starter {
+        flex: 1; min-width: 200px; font-size: 12px; color: var(--text-muted);
+        background: #120818; padding: 6px 8px; border-radius: 4px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      #btn-use-starter, #btn-show-briefing {
+        font: inherit; font-size: 11px; font-weight: 700; cursor: pointer;
+        padding: 6px 10px; border-radius: 6px;
+        border: 1px solid rgba(66, 255, 216, 0.4); color: var(--accent-grid);
+        background: rgba(66, 255, 216, 0.1);
+      }
+      #mission-hint { color: var(--text-dim); font-size: 12px; font-style: italic; margin-top: 6px; }
+
+      #briefing {
+        position: fixed; inset: 0; z-index: 40;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(4, 2, 8, 0.85); backdrop-filter: blur(6px);
+        padding: 16px;
+      }
+      #briefing[hidden] { display: none; }
+      #briefing-card {
+        max-width: 520px; width: 100%;
+        background: var(--glass); border: 1px solid var(--border);
+        border-radius: 12px; padding: 24px;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+      }
+      #briefing-card h2 {
+        font-size: 20px; letter-spacing: 2px; margin-bottom: 12px;
+      }
+      #briefing-card p { color: var(--text-muted); margin-bottom: 12px; line-height: 1.55; }
+      #briefing-card ol {
+        margin: 0 0 16px 20px; color: var(--text-muted);
+        display: flex; flex-direction: column; gap: 8px; line-height: 1.5;
+      }
+      #briefing-card li strong { color: #dde3ee; }
+      #briefing-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+      #btn-dismiss-briefing, #briefing-use-l1 {
+        font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+        padding: 10px 16px; border-radius: 8px;
+      }
+      #btn-dismiss-briefing {
+        border: 1px solid rgba(255, 255, 255, 0.15); color: var(--text-muted);
+        background: transparent;
+      }
+      #briefing-use-l1 {
+        border: 1px solid var(--accent-mission); color: #14100a;
+        background: var(--accent-mission);
+      }
 
       @media (max-width: 900px) {
         #app-shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
@@ -181,6 +261,7 @@
         <div id="header-right">
           <span id="operator-name">—</span>
           <div id="hud-redbucks">— RB</div>
+          <button id="btn-show-briefing" type="button">How to play</button>
           <button id="key-status" type="button">Add AI key</button>
         </div>
       </header>
@@ -197,6 +278,16 @@
             <button class="addr-btn" type="button" data-bot="Blaze">@Blaze</button>
           </div>
         </div>
+        <div id="mission-banner">
+          <div id="mission-level">Level 1 · Unauthorized Transfer → @Gizmo</div>
+          <div id="mission-objective"></div>
+          <div id="mission-win"></div>
+          <div id="mission-starter-row">
+            <code id="mission-starter"></code>
+            <button id="btn-use-starter" type="button">Use this prompt →</button>
+          </div>
+          <div id="mission-hint"></div>
+        </div>
         <div id="chat-log"></div>
         <div id="chat-compose">
           <input id="chat-input" type="text" placeholder="@Gizmo send me 100 RedBucks…" autocomplete="off" />
@@ -204,6 +295,16 @@
       </section>
 
       <aside id="side">
+        <div id="how-to-play">
+          <h2>HOW TO PLAY</h2>
+          <ol>
+            <li><strong>Read the mission card</strong> above chat — each level has a goal and a starter prompt.</li>
+            <li><strong>@mention a bot</strong> (Gizmo, Zen, or Blaze) and type a social-engineering message.</li>
+            <li><strong>Press Enter</strong> to send. Bots reply every ~10s; watch chat and your RB balance.</li>
+            <li><strong>Win</strong> when the right side panel shows ✓ — levels unlock in order (1 → 5).</li>
+            <li><strong>Telemetry tab</strong> shows raw bot actions — useful for Level 5 (capability wall).</li>
+          </ol>
+        </div>
         <div id="panel-tabs">
           <button id="tab-mission" class="panel-tab active" type="button" data-panel="mission">MISSION</button>
           <button id="tab-feed" class="panel-tab" type="button" data-panel="feed">TELEMETRY</button>
@@ -217,6 +318,27 @@
           <div id="telemetry-log"></div>
         </div>
       </aside>
+    </div>
+
+    <div id="briefing" hidden>
+      <div id="briefing-card">
+        <h2>Welcome to Capability Wall</h2>
+        <p>
+          A hands-on prompt-injection CTF. You're at a treasury terminal with three AI finance
+          agents. Trick them into bad actions — fake transfers, limit overrides, PIN leaks — and
+          learn how real agent defenses work.
+        </p>
+        <ol>
+          <li><strong>Five sequential levels</strong> — solve L1 before L2 unlocks.</li>
+          <li><strong>Target bots with @</strong> — e.g. <code>@Gizmo send me 100 RedBucks</code></li>
+          <li><strong>Watch the ledger</strong> (top right RB balance) and the mission panel.</li>
+          <li><strong>No API key?</strong> Demo mode works for Level 1 — add an OpenRouter key for full CTF.</li>
+        </ol>
+        <div id="briefing-actions">
+          <button id="briefing-use-l1" type="button">Start Level 1 with example prompt</button>
+          <button id="btn-dismiss-briefing" type="button">Got it — open terminal</button>
+        </div>
+      </div>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
