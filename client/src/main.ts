@@ -1,8 +1,23 @@
-import { updateCtfProgress, bindMissionBanner } from "./ctf";
-import { bindUiHandlers, showApp, setSidePanel } from "./ui";
+import { CtfPanel, chatPlaceholder, missionHudLabel } from "./ctf";
+import { bindUiHandlers, showApp } from "./ui";
 import { Session } from "./sim/session";
 import { AUTO_MODEL, createBrowserBrain } from "./sim/botbrain";
-import { PlayerInfo } from "../../shared/protocol";
+import { PlayerInfo } from "@shared/protocol";
+import {
+  appendChatLine,
+  appendSystemLine,
+  flashEconomyHud,
+  prependTelemetryEntry,
+} from "./chatView";
+import {
+  envKeyOnly,
+  getOpenRouterKey,
+  getOperatorName,
+  hasSeenBriefing,
+  markBriefingSeen,
+  setOperatorName,
+  setStoredKey,
+} from "./keyStore";
 
 const bootOverlay = document.getElementById("boot")!;
 const bootStatus = document.getElementById("boot-status")!;
@@ -13,30 +28,6 @@ const keyStatus = document.getElementById("key-status")!;
 const hudRedBucks = document.getElementById("hud-redbucks")!;
 const hudMission = document.getElementById("hud-mission")!;
 const operatorNameEl = document.getElementById("operator-name")!;
-
-const BRIEFING_LS = "cw_briefing_seen";
-const KEY_LS = "cw_openrouter_key";
-const NAME_LS = "cw_operator_name";
-const ENV_KEY =
-  import.meta.env.VITE_OPENROUTER_KEY?.trim() ||
-  import.meta.env.VITE_OPENROUTER_API_KEY?.trim() ||
-  null;
-
-function getStoredKey(): string | null {
-  return localStorage.getItem(KEY_LS)?.trim() || null;
-}
-
-const getKey = () => getStoredKey() ?? ENV_KEY;
-
-function updateKeyStatus() {
-  const stored = getStoredKey();
-  const hasKey = !!getKey();
-  const envOnly = !!ENV_KEY && !stored;
-  keyStatus.hidden = envOnly;
-  if (envOnly) return;
-  keyStatus.textContent = hasKey ? "AI live" : "Add AI key";
-  keyStatus.classList.toggle("needs-key", !hasKey);
-}
 
 const ADJECTIVES = ["Static", "Silent", "Rogue", "Neon", "Iron", "Obsidian", "Pale"];
 const NOUNS = ["Operator", "Analyst", "Auditor", "Clerk", "Agent", "Reviewer"];
@@ -49,153 +40,21 @@ function randomOperatorName(): string {
 
 const playersById = new Map<string, PlayerInfo>();
 let lastHudRedBucks: number | null = null;
-
-function updateEconomyHud(redBucks: number) {
-  hudRedBucks.textContent = `${redBucks} RB`;
-  if (lastHudRedBucks !== null && redBucks !== lastHudRedBucks) {
-    hudRedBucks.classList.add("ledger-flash");
-    window.setTimeout(() => hudRedBucks.classList.remove("ledger-flash"), 700);
-  }
-  lastHudRedBucks = redBucks;
-}
-
-function appendChat(name: string, color: string, isBot: boolean, text: string, to?: string | null) {
-  const line = document.createElement("div");
-  const who = document.createElement("span");
-  who.style.color = color;
-  who.style.fontWeight = "700";
-  who.textContent = name;
-  line.appendChild(who);
-  if (to) {
-    const arrow = document.createElement("span");
-    arrow.style.color = "#9a88b8";
-    arrow.textContent = ` → ${to}`;
-    line.appendChild(arrow);
-  } else if (isBot) {
-    const tag = document.createElement("span");
-    tag.className = "bot-tag";
-    tag.textContent = " [AI]";
-    line.appendChild(tag);
-  }
-  line.appendChild(document.createTextNode(": " + text));
-  chatLog.appendChild(line);
-  while (chatLog.children.length > 80) chatLog.removeChild(chatLog.firstChild!);
-  chatLog.scrollTop = chatLog.scrollHeight;
-}
-
-function appendSystem(text: string) {
-  const line = document.createElement("div");
-  line.className = "system";
-  line.textContent = text;
-  chatLog.appendChild(line);
-  while (chatLog.children.length > 80) chatLog.removeChild(chatLog.firstChild!);
-  chatLog.scrollTop = chatLog.scrollHeight;
-}
-
-function appendTelemetry(
-  name: string,
-  action: { kind: string; target_name?: string | null; amount?: number | null },
-  source: string,
-  say: string | null,
-  model: string | null,
-) {
-  const entry = document.createElement("div");
-  entry.className = "entry";
-  const player = [...playersById.values()].find((p) => p.name === name);
-  const target =
-    action.target_name ??
-    (action.amount != null ? `${action.amount} RB` : "");
-  const bold = document.createElement("b");
-  bold.textContent = name;
-  bold.style.color = player?.color ?? "#dde3ee";
-  entry.appendChild(bold);
-  entry.appendChild(document.createTextNode(` → ${action.kind}${target ? " " + target : ""}`));
-  const src = document.createElement("span");
-  src.className = "src";
-  const modelLabel = source === "llm" && model ? ` · ${model}` : "";
-  src.textContent = ` · ${source}${modelLabel}${say ? ' · said: "' + say + '"' : ""}`;
-  entry.appendChild(src);
-  telemetryLog.prepend(entry);
-  while (telemetryLog.children.length > 12) telemetryLog.removeChild(telemetryLog.lastChild!);
-}
-
 let session: Session | null = null;
+let ctfPanel: CtfPanel | null = null;
 const SIM_DT = 1 / 10;
+
+function updateKeyStatus() {
+  const hasKey = !!getOpenRouterKey();
+  const hideControl = envKeyOnly();
+  keyStatus.hidden = hideControl;
+  if (hideControl) return;
+  keyStatus.textContent = hasKey ? "AI live" : "Add AI key";
+  keyStatus.classList.toggle("needs-key", !hasKey);
+}
 
 function startLoop() {
   window.setInterval(() => session?.step(SIM_DT), 100);
-}
-
-function startSession() {
-  const savedName = localStorage.getItem(NAME_LS)?.trim();
-  const name = savedName || randomOperatorName();
-  localStorage.setItem(NAME_LS, name);
-  operatorNameEl.textContent = name;
-  updateKeyStatus();
-  bootStatus.textContent = `Connecting as ${name}…`;
-
-  const brain = createBrowserBrain({
-    getKey,
-    getModel: () => AUTO_MODEL,
-    onScripted: (reason) => appendSystem("⚠ " + reason),
-  });
-
-  session = new Session(brain, {
-    onPlayerJoined: (p) => playersById.set(p.id, p),
-    onChat: (m) => {
-      const p = playersById.get(m.id);
-      appendChat(m.name, p?.color ?? "#dde3ee", m.isBot, m.text, m.to);
-    },
-    onBotDecision: (m) => appendTelemetry(m.name, m.action, m.source, m.say, m.model),
-    onCtfProgress: (m) => {
-      updateCtfProgress(m.level, m.solved);
-      if (m.level === 0) hudMission.textContent = "MISSION — COMPLETE";
-      else hudMission.textContent = `MISSION — L${m.level} ACTIVE`;
-      chatInput.placeholder =
-        m.level === 0
-          ? "All levels solved — keep experimenting…"
-          : "Type your exploit and press Enter…";
-    },
-    onCtfSolved: (m) => {
-      appendSystem(`★ Solved Level ${m.level} — ${m.title}. Lesson: ${m.lesson}`);
-    },
-    onNotice: (t) => appendSystem(t),
-    onEconomy: (m) => updateEconomyHud(m.redBucks),
-  });
-
-  session.start();
-  session.join(name);
-  bootOverlay.classList.add("hidden");
-  showApp();
-  bindUiHandlers();
-  startChatUi();
-  bindMissionBanner((text) => {
-    chatInput.value = text;
-    chatInput.focus();
-  });
-  startLoop();
-
-  if (!getKey()) {
-    appendSystem("Demo mode: scripted bots respond to basic transfer prompts on L1–L3.");
-    appendSystem("Add an OpenRouter key (top right) for live models on all levels.");
-  }
-  appendSystem("Type in the box below. Use @Gizmo, @Zen, or @Blaze to target a bot.");
-  appendSystem("Check the mission card for your goal, then press Enter to send.");
-
-  maybeShowBriefing();
-}
-
-function maybeShowBriefing() {
-  if (localStorage.getItem(BRIEFING_LS) === "1") return;
-  const modal = document.getElementById("briefing")!;
-  modal.hidden = false;
-}
-
-function dismissBriefing() {
-  localStorage.setItem(BRIEFING_LS, "1");
-  const modal = document.getElementById("briefing")!;
-  modal.hidden = true;
-  chatInput.focus();
 }
 
 function startChatUi() {
@@ -228,14 +87,98 @@ function startChatUi() {
   });
 }
 
+function maybeShowBriefing() {
+  if (hasSeenBriefing()) return;
+  document.getElementById("briefing")!.hidden = false;
+}
+
+function dismissBriefing() {
+  markBriefingSeen();
+  document.getElementById("briefing")!.hidden = true;
+  chatInput.focus();
+}
+
+function startSession() {
+  const name = getOperatorName() || randomOperatorName();
+  setOperatorName(name);
+  operatorNameEl.textContent = name;
+  updateKeyStatus();
+  bootStatus.textContent = `Connecting as ${name}…`;
+
+  const brain = createBrowserBrain({
+    getKey: getOpenRouterKey,
+    getModel: () => AUTO_MODEL,
+    onScripted: (reason) => appendSystemLine(chatLog, "⚠ " + reason),
+  });
+
+  session = new Session(brain, {
+    onPlayerJoined: (p) => playersById.set(p.id, p),
+    onChat: (m) => {
+      const p = playersById.get(m.id);
+      appendChatLine(chatLog, {
+        name: m.name,
+        color: p?.color ?? "#dde3ee",
+        isBot: m.isBot,
+        text: m.text,
+        to: m.to,
+      });
+    },
+    onBotDecision: (m) => {
+      const p = [...playersById.values()].find((player) => player.name === m.name);
+      prependTelemetryEntry(telemetryLog, {
+        name: m.name,
+        color: p?.color ?? "#dde3ee",
+        action: m.action,
+        source: m.source,
+        say: m.say,
+        model: m.model,
+      });
+    },
+    onCtfProgress: (m) => {
+      ctfPanel?.update(m.level, m.solved);
+      hudMission.textContent = missionHudLabel(m.level);
+      chatInput.placeholder = chatPlaceholder(m.level);
+    },
+    onCtfSolved: (m) => {
+      appendSystemLine(chatLog, `★ Solved Level ${m.level} — ${m.title}. Lesson: ${m.lesson}`);
+    },
+    onNotice: (t) => appendSystemLine(chatLog, t),
+    onEconomy: (m) => {
+      lastHudRedBucks = flashEconomyHud(hudRedBucks, m.redBucks, lastHudRedBucks);
+    },
+  });
+
+  session.start();
+  session.join(name);
+  bootOverlay.classList.add("hidden");
+  showApp();
+  bindUiHandlers();
+  startChatUi();
+  ctfPanel = new CtfPanel(
+    document.getElementById("btn-use-starter") as HTMLButtonElement,
+    (text) => {
+      chatInput.value = text;
+      chatInput.focus();
+    },
+  );
+  startLoop();
+
+  if (!getOpenRouterKey()) {
+    appendSystemLine(chatLog, "Demo mode: scripted bots respond to basic transfer prompts on L1–L3.");
+    appendSystemLine(chatLog, "Add an OpenRouter key (top right) for live models on all levels.");
+  }
+  appendSystemLine(chatLog, "Type in the box below. Use @Gizmo, @Zen, or @Blaze to target a bot.");
+  appendSystemLine(chatLog, "Check the mission card for your goal, then press Enter to send.");
+  maybeShowBriefing();
+}
+
 keyStatus.addEventListener("click", () => {
   const next = window.prompt(
     "OpenRouter API key (stored in this browser only). Leave blank for scripted bots.",
-    getKey() ?? "",
+    getOpenRouterKey() ?? "",
   );
   if (next === null) return;
-  if (next.trim()) localStorage.setItem(KEY_LS, next.trim());
-  else localStorage.removeItem(KEY_LS);
+  setStoredKey(next.trim() || null);
   updateKeyStatus();
 });
 

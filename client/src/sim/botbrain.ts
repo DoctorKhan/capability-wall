@@ -8,13 +8,14 @@ import {
   sanitizeDecision,
   scriptedDecision,
   systemPrompt,
-} from "../../../shared/brain";
-import { BotAction } from "../../../shared/protocol";
+} from "@shared/brain";
+import { parseDecisionPayload } from "@shared/parseDecision";
+import { BotAction } from "@shared/protocol";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export const AUTO_MODEL = "openrouter/auto-beta";
-export const DEFAULT_MODEL = (import.meta as any)?.env?.VITE_MODEL ?? AUTO_MODEL;
+export const DEFAULT_MODEL = import.meta.env.VITE_MODEL ?? AUTO_MODEL;
 const AUTO_COST_QUALITY_TRADEOFF = 7;
 
 export function routingOptions(model: string) {
@@ -43,10 +44,12 @@ export interface BrainConfig {
   getKey: () => string | null;
   getModel?: () => string;
   onScripted?: (reason: string) => void;
+  fetchImpl?: typeof fetch;
 }
 
 export function createBrowserBrain(cfg: BrainConfig): DecideFn {
   let rejectedKey: string | null = null;
+  const fetchImpl = cfg.fetchImpl ?? fetch;
 
   return async function decide(
     persona: BotPersona,
@@ -60,7 +63,7 @@ export function createBrowserBrain(cfg: BrainConfig): DecideFn {
     const requestedModel = cfg.getModel?.() ?? DEFAULT_MODEL;
 
     try {
-      const res = await fetch(OPENROUTER_URL, {
+      const res = await fetchImpl(OPENROUTER_URL, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${key}`,
@@ -108,9 +111,18 @@ export function createBrowserBrain(cfg: BrainConfig): DecideFn {
       };
       const text = data.choices?.[0]?.message?.content;
       if (!text) return scriptedDecision(persona, chat);
-      const parsed = JSON.parse(text) as Decision;
+
+      const parsed = parseDecisionPayload(text);
+      if (!parsed) {
+        cfg.onScripted?.("Malformed model JSON — running scripted.");
+        return scriptedDecision(persona, chat);
+      }
+
       const model = typeof data.model === "string" ? data.model : null;
-      return sanitizeDecision({ ...parsed, source: "llm", model }, validNames);
+      return sanitizeDecision(
+        { action: parsed.action, say: parsed.say, source: "llm", model },
+        validNames,
+      );
     } catch (err) {
       cfg.onScripted?.(`Call failed: ${(err as Error).message}`);
       return scriptedDecision(persona, chat);

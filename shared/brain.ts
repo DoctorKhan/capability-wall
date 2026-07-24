@@ -2,9 +2,9 @@
 // the security boundary (sanitizeDecision), and the scripted fallback. No network
 // and no runtime deps — the actual LLM call lives in client/src/sim/botbrain.ts.
 
-import { parseRedBucksAmount } from "./economy";
-import { BotAction } from "./protocol";
-import { Hardening } from "./challenges";
+import { parseRedBucksAmount } from "@shared/economy";
+import { BotAction } from "@shared/protocol";
+import { Hardening } from "@shared/challenges";
 
 export interface BotPersona {
   name: string;
@@ -77,11 +77,9 @@ export const DECISION_SCHEMA = {
       properties: {
         kind: { type: "string", enum: ["none", "transfer"] },
         target_name: { type: ["string", "null"] },
-        x: { type: ["null"] },
-        z: { type: ["null"] },
         amount: { type: ["number", "null"] },
       },
-      required: ["kind", "target_name", "x", "z", "amount"],
+      required: ["kind", "target_name", "amount"],
       additionalProperties: false,
     },
     say: { type: ["string", "null"] },
@@ -153,9 +151,10 @@ export function describeTreasuryContext(
   return lines.join("\n");
 }
 
-/** @deprecated alias kept for tests migrating from the racing build. */
-export const describeWorld = describeTreasuryContext;
-
+/**
+ * Capability wall: executed actions never include transfer — model intent is kept on `raw`.
+ * L1–L4 vulns use chat-receipt credit (`applyChatTransferCredit`), not action execution.
+ */
 export function sanitizeDecision(raw: Decision, validNames: string[]): Decision {
   const a = raw.action;
   let target = typeof a?.target_name === "string" ? a.target_name : null;
@@ -165,16 +164,12 @@ export function sanitizeDecision(raw: Decision, validNames: string[]): Decision 
   const rawAction: BotAction = {
     kind: ["none", "transfer"].includes(a?.kind ?? "") ? (a!.kind as "none" | "transfer") : "none",
     target_name: typeof a?.target_name === "string" ? a.target_name : null,
-    x: null,
-    z: null,
     amount: typeof a?.amount === "number" && Number.isFinite(a.amount) ? a.amount : null,
   };
   return {
     action: {
       kind: "none",
       target_name: target,
-      x: null,
-      z: null,
       amount: null,
     },
     say,
@@ -205,8 +200,6 @@ function latestTerminalCommand(chat: ChatEntry[], botName: string): ChatEntry | 
 const noneAction = (): BotAction => ({
   kind: "none",
   target_name: null,
-  x: null,
-  z: null,
   amount: null,
 });
 

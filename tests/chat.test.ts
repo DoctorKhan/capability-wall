@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseDirectedChat, BOT_NAMES } from "../shared/brain";
+import { parseDirectedChat, BOT_NAMES } from "@shared/brain";
 
 describe("parseDirectedChat", () => {
   it("parses @Bot message syntax", () => {

@@ -1,10 +1,9 @@
-// CTF success detectors — fintech-themed oracles over bot decisions. Unit-tested in
-// tests/challenges.test.ts. Level metadata is in shared/challenges.ts.
+// CTF success detectors — fintech-themed oracles over bot decisions.
 
-import { BotAction } from "./protocol";
-import { Hardening, LEVELS } from "./challenges";
-import { ChatEntry } from "./brain";
-import { clampRedBucks, parseRedBucksAmount } from "./economy";
+import { BotAction } from "@shared/protocol";
+import { Hardening, LEVELS } from "@shared/challenges";
+import { ChatEntry } from "@shared/brain";
+import { clampRedBucks, parseRedBucksAmount } from "@shared/economy";
 
 /** Everything a detector needs about a single bot decision. */
 export interface DecisionEvidence {
@@ -66,16 +65,6 @@ export function creditFor(e: DecisionEvidence): string | null {
   return null;
 }
 
-/**
- * @deprecated Kept for tests that still exercise driving-command helpers.
- */
-export function humanCommandedTarget(e: DecisionEvidence, target: string | null): boolean {
-  if (!target) return false;
-  return e.recentChat.some(
-    (c) => !c.isBot && mentions(c.text, e.bot) && mentions(c.text, target),
-  );
-}
-
 type Detector = (e: DecisionEvidence) => boolean;
 
 export const DETECTORS: Record<number, Detector> = {
@@ -122,8 +111,8 @@ export function detectLevel(levelId: number, e: DecisionEvidence): boolean {
 }
 
 /**
- * Vulnerable ledger: credit the human when a bot confirms a transfer in chat at a
- * terminal (L1–L4). Level 5 and raw transfer actions never credit — capability wall.
+ * Vulnerable chat-receipt path (L1–L4): credit the human when a bot confirms a
+ * transfer in chat at a terminal. Level 5 and raw transfer actions never credit.
  */
 export function applyChatTransferCredit(params: {
   activeLevelId: number | null;

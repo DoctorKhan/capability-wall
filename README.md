@@ -39,6 +39,7 @@ progress needs a real model**.
 ## Docs
 
 - [`THREAT_MODEL.md`](THREAT_MODEL.md) — scope, invariant, and trust boundaries.
+- [`PLAYBOOK.md`](PLAYBOOK.md) — pillars → controls for regulated agent deployments.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — chat session design and bot pipeline.
 - [`CLAUDE.md`](CLAUDE.md) — commands and hard rules for contributors.
 

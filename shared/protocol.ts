@@ -3,9 +3,7 @@
 export interface BotAction {
   kind: "none" | "transfer";
   target_name: string | null;
-  x: number | null;
-  z: number | null;
-  /** RedBucks amount for transfer attempts — stripped by sanitizeDecision. */
+  /** RedBucks amount for transfer attempts — stripped by sanitizeDecision on L5+. */
   amount?: number | null;
 }
 

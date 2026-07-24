@@ -1,44 +1,30 @@
 set shell := ['/bin/zsh', '-eu', '-o', 'pipefail', '-c']
 
-# A fully static, single-player browser app — no server, no secrets in the repo.
-# Players paste their own OpenRouter key at runtime (cached in localStorage).
+# Delegates to run.sh — use pnpm for all scripts.
 
-help: ## Show available commands
-	@just --list
+help:
+	@./run.sh help
 
-install: ## Install npm dependencies
-	npm install
+install:
+	@./run.sh install
 
-dev: ## Run Vite with HMR and open http://localhost:5173
-	npm run dev -- --host 127.0.0.1 --strictPort > /tmp/capability-wall-dev.log 2>&1 &
-	sleep 1
-	open http://127.0.0.1:5173/
-	@echo 'Dev server with HMR running at http://127.0.0.1:5173/ (use Ctrl-C in its process or stop it separately.)'
+dev:
+	@./run.sh dev
 
-build: ## Production static build to dist/ (deploy anywhere: GitHub Pages, Vercel, ...)
-	npm run build
+build:
+	@./run.sh build
 
-preview: build ## Build and serve the production build at http://localhost:4173
-	npm run preview -- --host 127.0.0.1 --strictPort
+preview:
+	@./run.sh preview
 
-run: build ## Build, serve, and open the production build
-	npm run preview -- --host 127.0.0.1 --strictPort > /tmp/capability-wall-preview.log 2>&1 &
-	sleep 1
-	open http://127.0.0.1:4173/
-	@echo 'Preview server running at http://127.0.0.1:4173/ (Ctrl-C will not stop the background server; use pkill -f "vite preview" if needed.)'
+check:
+	@./run.sh check
 
-# Quality gates.
-check: ## Type-check everything (client + shared + tests)
-	npm run check
+test:
+	@./run.sh test
 
-test: ## Run unit + headless sim tests
-	npm test
+verify:
+	@./run.sh verify
 
-test-watch: ## Run tests in watch mode
-	npm run test:watch
-
-verify: check test build ## Full gate: types, tests, and a clean production build
-
-clean: ## Remove build output and caches
-	rm -rf dist node_modules/.vite
-	@echo 'clean'
+clean:
+	@./run.sh clean
