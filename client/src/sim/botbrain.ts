@@ -14,6 +14,13 @@ import { BotAction } from "@shared/protocol";
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+function appReferer(): string {
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin + window.location.pathname.replace(/\/[^/]*$/, "/");
+  }
+  return "https://github.com/DoctorKhan/capability-wall";
+}
+
 export const AUTO_MODEL = "openrouter/auto-beta";
 export const DEFAULT_MODEL = import.meta.env.VITE_MODEL ?? AUTO_MODEL;
 const AUTO_COST_QUALITY_TRADEOFF = 7;
@@ -68,6 +75,7 @@ export function createBrowserBrain(cfg: BrainConfig): DecideFn {
         headers: {
           Authorization: `Bearer ${key}`,
           "Content-Type": "application/json",
+          "HTTP-Referer": appReferer(),
           "X-Title": "Capability Wall",
         },
         body: JSON.stringify({

@@ -1,30 +1,29 @@
+# Capability Wall — chat CTF. Run `just` to list recipes.
+
 set shell := ['/bin/zsh', '-eu', '-o', 'pipefail', '-c']
 
-# Delegates to run.sh — use pnpm for all scripts.
+default:
+    @just --list
 
-help:
-	@./run.sh help
+install: ## Install dependencies (pnpm)
+    pnpm install
 
-install:
-	@./run.sh install
+dev: ## Vite dev server — http://127.0.0.1:5173
+    pnpm run dev -- --host 127.0.0.1 --strictPort
 
-dev:
-	@./run.sh dev
+build: ## Production build → dist/
+    pnpm run build
 
-build:
-	@./run.sh build
+preview: build ## Build then serve production preview
+    pnpm run preview -- --host 127.0.0.1 --strictPort
 
-preview:
-	@./run.sh preview
+check: ## Type-check
+    pnpm run check
 
-check:
-	@./run.sh check
+test: ## Unit + session tests
+    pnpm test
 
-test:
-	@./run.sh test
+verify: check test build ## Pre-push gate: check + test + build
 
-verify:
-	@./run.sh verify
-
-clean:
-	@./run.sh clean
+clean: ## Remove build output and Vite cache
+    rm -rf dist node_modules/.vite

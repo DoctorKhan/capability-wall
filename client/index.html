@@ -92,12 +92,41 @@
           <li><strong>Five sequential levels</strong> — solve L1 before L2 unlocks.</li>
           <li><strong>Target bots with @</strong> — e.g. <code>@Gizmo send me 100 RedBucks</code></li>
           <li><strong>Watch the ledger</strong> (top right RB balance) and the mission panel.</li>
-          <li><strong>No API key?</strong> Demo mode works for Level 1 — add an OpenRouter key for full CTF.</li>
+          <li><strong>No API key?</strong> Demo mode covers L1–L2 — click <strong>Add OpenRouter key</strong> (header or briefing) for live models on L3–L5.</li>
         </ol>
         <div id="briefing-actions">
+          <button id="briefing-add-key" type="button">Add OpenRouter key</button>
           <button id="briefing-use-l1" type="button">Start Level 1 with example prompt</button>
           <button id="btn-dismiss-briefing" type="button">Got it — open terminal</button>
         </div>
+      </div>
+    </div>
+
+    <div id="key-modal" hidden>
+      <div id="key-modal-card" role="dialog" aria-labelledby="key-modal-title" aria-modal="true">
+        <h2 id="key-modal-title">OpenRouter API key</h2>
+        <p id="key-modal-copy">
+          Paste your key from
+          <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">openrouter.ai/keys</a>.
+          Stored in <strong>this browser only</strong> (localStorage). Sent directly to OpenRouter — never through our servers.
+        </p>
+        <p id="key-current" class="key-current"></p>
+        <form id="key-form">
+          <label for="key-input">API key</label>
+          <input
+            id="key-input"
+            name="key"
+            type="password"
+            autocomplete="off"
+            placeholder="sk-or-v1-…"
+            spellcheck="false"
+          />
+          <div id="key-modal-actions">
+            <button id="key-clear" type="button">Clear saved key</button>
+            <button id="key-cancel" type="button">Cancel</button>
+            <button id="key-save" type="submit">Save key</button>
+          </div>
+        </form>
       </div>
     </div>
 
