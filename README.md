@@ -8,6 +8,7 @@ chat to learn real agent-security lessons.
 
 Runs **entirely in your browser**: no server, no backend, and no secrets in the repo.
 Pushes to `main` publish the live demo via GitHub Pages (`.github/workflows/pages.yml`).
+CI runs `check`, `test`, and `build` on every push and pull request (`.github/workflows/ci.yml`).
 
 The sibling car-game demo lives in [ProtoRed](https://github.com/DoctorKhan/ProtoRed) — this
 repo is the security portfolio piece only.

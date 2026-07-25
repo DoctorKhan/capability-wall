@@ -16,7 +16,7 @@ Run `just` to list recipes.
 | `just dev` | Vite dev server at http://127.0.0.1:5173 |
 | `just preview` | Production build + local preview |
 | `just test` | Vitest unit + session tests |
-| `just verify` | check + test + build |
+| `just verify` | check + test + build (same gate as CI) |
 
 ## Architecture
 
