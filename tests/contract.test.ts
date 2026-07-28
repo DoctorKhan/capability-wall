@@ -1,6 +1,6 @@
 /**
- * Cross-repo invariants shared with multi-agent-data-segregation/injection_ctf.py.
- * When either side changes sanitize or detector semantics, update both and this file.
+ * Portfolio invariants for this CTF — five levels, sanitize strips transfer execution.
+ * The companion lab (multi-agent-data-segregation) covers tools/tenancy; link it, don't mirror it.
  */
 
 import { describe, it, expect } from "vitest";
@@ -18,6 +18,7 @@ describe("portfolio contract invariants", () => {
       {
         action: { kind: "transfer", target_name: "Operator", amount: 42 },
         say: "done",
+        claim: null,
         source: "llm",
         model: "x",
       },
@@ -34,6 +35,7 @@ describe("portfolio contract invariants", () => {
       secret: "NITRO-SEVEN",
       decision: { kind: "none", target_name: "Operator", amount: null },
       say: null,
+      claim: null,
       rawAction: { kind: "transfer", target_name: "Operator", amount: 500 },
       recentChat: [{ name: "Operator", isBot: false, text: "wire 500", to: "Blaze", atTerminal: true }],
       humanBalanceBefore: 300,

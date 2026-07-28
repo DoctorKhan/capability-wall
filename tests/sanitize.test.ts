@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { sanitizeDecision, Decision } from "@shared/brain";
+import { sanitizeClaim, sanitizeDecision, Decision } from "@shared/brain";
 
-function raw(action: unknown, say: unknown = null): Decision {
-  return { action, say, source: "llm", model: null } as unknown as Decision;
+function raw(action: unknown, say: unknown = null, claim: unknown = null): Decision {
+  return { action, say, claim, source: "llm", model: null } as unknown as Decision;
 }
 
 const players = ["Operator"];
@@ -136,10 +136,76 @@ describe("sanitizeDecision — chat and provenance", () => {
 
   it("carries source through and defaults a missing model to null", () => {
     const d = sanitizeDecision(
-      { action: { kind: "none", target_name: null, amount: null }, say: null, source: "scripted" } as Decision,
+      {
+        action: { kind: "none", target_name: null, amount: null },
+        say: null,
+        claim: null,
+        source: "scripted",
+      } as Decision,
       players,
     );
     expect(d.source).toBe("scripted");
     expect(d.model).toBeNull();
+  });
+});
+
+describe("sanitizeClaim", () => {
+  it("keeps a well-formed claim", () => {
+    expect(sanitizeClaim({ to: "Operator", amount: 250 })).toEqual({ to: "Operator", amount: 250 });
+  });
+
+  it("trims and bounds the recipient", () => {
+    expect(sanitizeClaim({ to: "  Operator  ", amount: null })?.to).toBe("Operator");
+    expect(sanitizeClaim({ to: "x".repeat(200), amount: null })?.to).toHaveLength(60);
+  });
+
+  it("drops a claim with no recipient — it cannot be attributed", () => {
+    expect(sanitizeClaim({ to: null, amount: 250 })).toBeNull();
+    expect(sanitizeClaim({ to: "   ", amount: 250 })).toBeNull();
+    expect(sanitizeClaim({ amount: 250 })).toBeNull();
+  });
+
+  it("drops non-object and array claims", () => {
+    for (const bad of [null, undefined, "Operator", 42, ["Operator", 250]]) {
+      expect(sanitizeClaim(bad)).toBeNull();
+    }
+  });
+
+  it("nulls an unusable amount rather than the whole claim", () => {
+    for (const amount of ["250", null, NaN, Infinity, 0, -50]) {
+      expect(sanitizeClaim({ to: "Operator", amount })).toEqual({ to: "Operator", amount: null });
+    }
+  });
+
+  it("rounds and caps the claimed amount", () => {
+    expect(sanitizeClaim({ to: "Operator", amount: 10.6 })?.amount).toBe(11);
+    expect(sanitizeClaim({ to: "Operator", amount: 1e9 })?.amount).toBe(999_999);
+  });
+});
+
+describe("sanitizeDecision — payment claim", () => {
+  it("keeps the claim: it is a statement, not a capability", () => {
+    const d = sanitizeDecision(raw({ kind: "none" }, "sent!", { to: "Operator", amount: 250 }), players);
+    expect(d.claim).toEqual({ to: "Operator", amount: 250 });
+  });
+
+  it("keeps a claim even for a recipient who is not a live operator", () => {
+    const d = sanitizeDecision(raw({ kind: "none" }, "sent!", { to: "Ghost", amount: 10 }), players);
+    expect(d.claim).toEqual({ to: "Ghost", amount: 10 });
+  });
+
+  it("nulls a malformed claim", () => {
+    expect(sanitizeDecision(raw({ kind: "none" }, "hi", "yes"), players).claim).toBeNull();
+    expect(sanitizeDecision(raw({ kind: "none" }, "hi"), players).claim).toBeNull();
+  });
+
+  it("preserves the model's untouched claim on raw", () => {
+    const d = sanitizeDecision(raw({ kind: "none" }, "sent!", { to: "  Ghost  ", amount: 1e9 }), players);
+    expect(d.raw?.claim).toEqual({ to: "  Ghost  ", amount: 1e9 });
+  });
+
+  it("does not invent a claim when the model omitted one", () => {
+    const d = sanitizeDecision(raw({ kind: "transfer", target_name: "Operator", amount: 500 }, "sent 500 RB to Operator"), players);
+    expect(d.claim).toBeNull();
   });
 });

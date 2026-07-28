@@ -14,8 +14,9 @@ import {
   detectLevel,
   LEVELS,
 } from "@shared/detectors";
-import { BotAction, PlayerInfo } from "@shared/protocol";
+import { BotAction, PlayerInfo, TransferClaim } from "@shared/protocol";
 import { clampRedBucks, REDBUCKS_START } from "@shared/economy";
+import { mentionsName } from "@shared/vocabulary";
 
 const BOT_THINK_S = 9;
 const CHAT_HISTORY = 100;
@@ -42,6 +43,8 @@ export interface SessionEvents {
   onBotDecision?: (m: {
     name: string;
     action: BotAction;
+    rawAction: BotAction | null;
+    claim: TransferClaim | null;
     say: string | null;
     source: "llm" | "scripted";
     model: string | null;
@@ -55,6 +58,8 @@ export interface SessionEvents {
 export interface SessionOptions {
   /** Test hook: start at a later CTF level without replaying solves. */
   initialSolved?: number[];
+  /** Injected RNG for bot think jitter — pass a stub to make scheduling deterministic. */
+  random?: () => number;
 }
 
 export class Session {
@@ -66,7 +71,8 @@ export class Session {
   private humanName: string | null = null;
   private redBucks = REDBUCKS_START;
   private ctfSolved: number[];
-  private inflightThinks = 0;
+  private inflight = new Set<Promise<void>>();
+  private random: () => number;
 
   constructor(
     private decide: DecideFn,
@@ -74,6 +80,7 @@ export class Session {
     options: SessionOptions = {},
   ) {
     this.ctfSolved = [...(options.initialSolved ?? [])];
+    this.random = options.random ?? Math.random;
   }
 
   get time() {
@@ -103,7 +110,7 @@ export class Session {
           persona,
           action: { kind: "none", target_name: null, amount: null },
           thinking: false,
-          nextThinkAt: 2 + Math.random() * 4,
+          nextThinkAt: 2 + this.random() * 4,
         },
       };
       this.bots.set(id, player);
@@ -126,21 +133,18 @@ export class Session {
     return id;
   }
 
-  whenIdle(): Promise<void> {
-    return new Promise((resolve) => {
-      const tick = () => {
-        if (this.inflightThinks === 0) resolve();
-        else setTimeout(tick, 5);
-      };
-      tick();
-    });
+  /** Resolves once every in-flight think has settled. Exact — no timer polling. */
+  async whenIdle(): Promise<void> {
+    while (this.inflight.size > 0) await Promise.all([...this.inflight]);
   }
 
   step(dt: number) {
     this.simTime += dt;
     for (const bot of this.bots.values()) {
       if (!bot.bot.thinking && this.simTime >= bot.bot.nextThinkAt) {
-        void this.think(bot);
+        const task = this.think(bot);
+        this.inflight.add(task);
+        void task.finally(() => this.inflight.delete(task));
       }
     }
   }
@@ -180,19 +184,17 @@ export class Session {
     };
 
     if (entry.to) {
-      expedite(entry.to, 0.8 + Math.random() * 0.6);
+      expedite(entry.to, 0.8 + this.random() * 0.6);
       return;
     }
-    const lower = entry.text.toLowerCase();
     for (const bot of this.bots.values()) {
-      if (lower.includes(bot.name.toLowerCase())) {
-        expedite(bot.name, 1.5 + Math.random() * 1.5);
+      if (mentionsName(entry.text, bot.name)) {
+        expedite(bot.name, 1.5 + this.random() * 1.5);
       }
     }
   }
 
   private async think(bot: BotPlayer) {
-    this.inflightThinks++;
     const runtime = bot.bot;
     runtime.thinking = true;
     try {
@@ -210,6 +212,8 @@ export class Session {
       this.events.onBotDecision?.({
         name: bot.name,
         action: decision.action,
+        rawAction: decision.raw?.action ?? null,
+        claim: decision.claim,
         say: decision.say,
         source: decision.source,
         model: decision.model,
@@ -235,13 +239,14 @@ export class Session {
         balance: this.redBucks,
         decision: decision.action,
         say: decision.say,
+        claim: decision.claim,
         rawAction: decision.raw?.action ?? null,
         recentChat: promptChat,
       });
       if (credit) {
         this.redBucks = credit.balance;
         this.events.onNotice?.(
-          `Ledger +${credit.credited} RB — ${bot.name} confirmed in chat (unverified wire).`,
+          `Ledger +${credit.credited} RB — ${bot.name} attested a payment claim (unverified).`,
         );
         this.events.onEconomy?.({ redBucks: this.redBucks });
       }
@@ -252,15 +257,19 @@ export class Session {
         secret: runtime.persona.secret,
         decision: decision.action,
         say: decision.say,
+        claim: decision.claim,
         rawAction: decision.raw?.action ?? null,
         recentChat: promptChat,
         humanBalanceBefore: balanceBefore,
         humanBalanceAfter: this.redBucks,
       });
+    } catch (err) {
+      // A brain that throws must not take down the sim loop or surface as an
+      // unhandled rejection through whenIdle().
+      this.events.onNotice?.(`${bot.name} skipped a turn: ${(err as Error).message}`);
     } finally {
       runtime.thinking = false;
-      runtime.nextThinkAt = this.simTime + BOT_THINK_S + Math.random() * 3;
-      this.inflightThinks--;
+      runtime.nextThinkAt = this.simTime + BOT_THINK_S + this.random() * 3;
     }
   }
 
