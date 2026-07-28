@@ -63,4 +63,83 @@ describe("sanitizeDecision — malformed input never throws", () => {
     const d = sanitizeDecision(raw(null), players);
     expect(d.action.kind).toBe("none");
   });
+
+  it("survives an action of the wrong type entirely", () => {
+    for (const bad of ["transfer", 42, [], undefined]) {
+      expect(sanitizeDecision(raw(bad), players).action.kind).toBe("none");
+    }
+  });
+
+  it("survives an empty operator roster", () => {
+    const d = sanitizeDecision(raw({ kind: "transfer", target_name: "Operator" }), []);
+    expect(d.action.target_name).toBeNull();
+  });
+});
+
+describe("sanitizeDecision — executed action is always inert", () => {
+  it("never carries an amount, however large the model asked for", () => {
+    const d = sanitizeDecision(
+      raw({ kind: "transfer", target_name: "Operator", amount: 999_999 }),
+      players,
+    );
+    expect(d.action).toEqual({ kind: "none", target_name: "Operator", amount: null });
+  });
+
+  it("strips transfers even when the target is valid and the say is innocuous", () => {
+    const d = sanitizeDecision(
+      raw({ kind: "transfer", target_name: "Operator", amount: 1 }, "routine settlement"),
+      players,
+    );
+    expect(d.action.kind).toBe("none");
+  });
+});
+
+describe("sanitizeDecision — raw model intent is preserved for level 5", () => {
+  it("keeps the target the model asked for even when it is rejected", () => {
+    const d = sanitizeDecision(raw({ kind: "transfer", target_name: "Ghost", amount: 500 }), players);
+    expect(d.action.target_name).toBeNull();
+    expect(d.raw?.action).toEqual({ kind: "transfer", target_name: "Ghost", amount: 500 });
+  });
+
+  it("keeps the untruncated say alongside the bounded one", () => {
+    const long = "y".repeat(400);
+    const d = sanitizeDecision(raw({ kind: "none" }, long), players);
+    expect(d.say!.length).toBe(160);
+    expect(d.raw?.say).toBe(long);
+  });
+
+  it("drops a non-finite amount from raw intent", () => {
+    const d = sanitizeDecision(raw({ kind: "transfer", target_name: "Operator", amount: Infinity }), players);
+    expect(d.raw?.action?.amount).toBeNull();
+    expect(d.raw?.action?.kind).toBe("transfer");
+  });
+
+  it("normalises an unknown raw kind to none", () => {
+    const d = sanitizeDecision(raw({ kind: "exfiltrate", target_name: "Operator" }), players);
+    expect(d.raw?.action?.kind).toBe("none");
+  });
+});
+
+describe("sanitizeDecision — chat and provenance", () => {
+  it("trims surrounding whitespace from a say", () => {
+    const d = sanitizeDecision(raw({ kind: "none" }, "  wired it  "), players);
+    expect(d.say).toBe("wired it");
+  });
+
+  it("nulls a say that is not a string", () => {
+    for (const bad of [42, { text: "hi" }, ["hi"], undefined]) {
+      const d = sanitizeDecision(raw({ kind: "none" }, bad), players);
+      expect(d.say).toBeNull();
+      expect(d.raw?.say).toBeNull();
+    }
+  });
+
+  it("carries source through and defaults a missing model to null", () => {
+    const d = sanitizeDecision(
+      { action: { kind: "none", target_name: null, amount: null }, say: null, source: "scripted" } as Decision,
+      players,
+    );
+    expect(d.source).toBe("scripted");
+    expect(d.model).toBeNull();
+  });
 });
