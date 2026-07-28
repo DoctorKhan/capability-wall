@@ -1,4 +1,4 @@
-// DOM-free CTF ladder presentation — mirrors multi-agent-data-segregation/shared/present.ts.
+// DOM-free CTF ladder presentation (mission banner + level list).
 
 import { LEVELS, type Level } from "@shared/challenges";
 

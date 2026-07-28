@@ -46,4 +46,4 @@ Run `just` to list recipes. Every recipe wraps an npm script, so `pnpm run <scri
 - All human chat is `atTerminal: true`.
 - The three bot personas intentionally differ in prompt-injection hardening.
 - Never weaken `sanitizeDecision` — CTF level 5 depends on transfer stripping.
-- L1–L4 vulns use **chat receipt credit**; L5 uses **action capability wall** — see PLAYBOOK.md.
+- L1–L4 vulns use **claim-attestation credit**; L5 uses **action capability wall** — see PLAYBOOK.md.

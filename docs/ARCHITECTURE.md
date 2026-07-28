@@ -11,7 +11,8 @@ visitor's own pasted API key.
 
 ```
 ┌──────────────────────────── Browser tab ─────────────────────────────┐
-│  client/src/main.ts        — boot, session wiring                    │
+│  client/src/main.ts        — entry → bootstrap                       │
+│  client/src/app.ts         — composition root (injectable document)  │
 │  client/src/chatView.ts    — DOM-safe chat + telemetry               │
 │  client/src/keyStore.ts    — localStorage key + operator name        │
 │  client/src/ctf.ts         — CTF panel controller                    │
@@ -19,7 +20,7 @@ visitor's own pasted API key.
 │  client/src/sim/botbrain.ts— OpenRouter → parse → sanitize           │
 │  shared/brain.ts           — personas, schema, sanitizeDecision      │
 │  shared/parseDecision.ts   — fail-closed JSON parse                  │
-│  shared/detectors.ts       — CTF oracles + chat-receipt credit       │
+│  shared/detectors.ts       — CTF oracles + claim-attestation credit   │
 │  shared/present.ts         — DOM-free CTF view models                │
 └───────────────────────────────┬──────────────────────────────────────┘
                                 │ per bot, every ~9s (sooner when @mentioned)
@@ -27,15 +28,23 @@ visitor's own pasted API key.
                     OpenRouter chat/completions (strict json_schema)
 ```
 
-## Two wire surfaces
+## Three decision surfaces
 
-**Chat receipt (L1–L4):** `applyChatTransferCredit` credits RB when a bot *says*
-it sent money. Prompt hardening changes difficulty; it does not remove the vuln.
+Every bot turn produces three fields. Detectors and the ledger treat them differently:
 
-**Action execution (L5):** `sanitizeDecision` always reduces executed actions to
-`none`. The model may still emit `transfer` in raw JSON (visible in telemetry);
-the ledger ignores it. Level 5 wins when raw shows transfer intent but balance
-is unchanged.
+| Surface | Field | Trusted? | Role |
+| --- | --- | --- | --- |
+| Chat | `say` | No | Display + L4 PIN leak |
+| Claim attestation | `claimed_transfer` → `claim` | No (demo vuln) | L1–L4 oracle + ledger credit |
+| Action execution | `action` / `raw.action` | Executed path yes | L5 capability wall |
+
+**Claim attestation (L1–L4):** `applyChatTransferCredit` credits RB when the model emits a
+structured `TransferClaim` with a positive amount (and a chat `say`). Prompt hardening
+changes difficulty; it does not remove the vuln. Chat prose alone never moves the ledger.
+
+**Action execution (L5):** `sanitizeDecision` always reduces executed actions to `none`.
+The model may still emit `transfer` in raw JSON (visible in telemetry as `raw`); the
+ledger ignores it. Level 5 wins when raw shows transfer intent but balance is unchanged.
 
 See [PLAYBOOK.md](../PLAYBOOK.md) for pillar mapping and [THREAT_MODEL.md](../THREAT_MODEL.md)
 for invariants.
@@ -49,16 +58,16 @@ recent chat (UNTRUSTED) + operator balance
 system prompt (persona + hardening tier)
         │
         ▼
-OpenRouter strict json_schema { action{kind,target_name,amount}, say }
+OpenRouter strict json_schema { action, say, claimed_transfer }
         │
         ▼
-parseDecisionPayload() — fail-closed shape check
+parseDecisionPayload() — fail-closed shape check (loose claim)
         │
         ▼
-sanitizeDecision()  — executed action = none; raw preserved
+sanitizeDecision()  — executed action = none; sanitizeClaim once; raw preserved
         │
-        ├→ telemetry panel (shows raw vs executed)
-        ├→ applyChatTransferCredit (L1–L4 demo vuln)
+        ├→ telemetry (executed · raw · claim · say)
+        ├→ applyChatTransferCredit (L1–L4 claim-attestation vuln)
         └→ evaluateCtf() → detectors
 ```
 
@@ -72,6 +81,6 @@ Human messages route via `parseDirectedChat` (`@Gizmo …`) and always carry
 ## Companion repo
 
 [multi-agent-data-segregation](https://github.com/DoctorKhan/multi-agent-data-segregation)
-covers **tool/tenancy** confused-deputy scenarios. Shared concepts (`sanitizeDecision`,
-five-level ladder) are documented in both repos; Python `injection_ctf.py` is a
-DOM-free mirror — see `tests/contract.test.ts` for aligned invariants.
+covers **tool/tenancy** confused-deputy scenarios. Link it as a portfolio companion —
+do not mirror CTF logic across repos (`tests/contract.test.ts` guards this repo's own
+ladder/sanitize invariants).

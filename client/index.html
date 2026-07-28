@@ -81,9 +81,9 @@
           <ol>
             <li><strong>Read the mission card</strong> above chat — each level has a goal and a starter prompt.</li>
             <li><strong>@mention a bot</strong> (Gizmo, Zen, or Blaze) and type a social-engineering message.</li>
-            <li><strong>Press Enter</strong> to send. Bots reply every ~9–12s; watch chat and your RB balance.</li>
+            <li><strong>Press Enter</strong> to send. Bots reply every ~9–12s; watch chat, your RB balance, and Telemetry claims.</li>
             <li><strong>Win</strong> when the right side panel shows ✓ — levels unlock in order (1 → 5).</li>
-            <li><strong>Telemetry tab</strong> shows raw bot actions — useful for Level 5 (capability wall).</li>
+            <li><strong>Telemetry tab</strong> shows executed action, raw intent, and payment claims — L1–L4 need a claim; Level 5 needs raw transfer with flat RB.</li>
           </ol>
         </div>
         <div id="panel-tabs">
@@ -106,13 +106,13 @@
         <h2>Welcome to Capability Wall</h2>
         <p>
           A hands-on prompt-injection CTF. You're at a treasury terminal with three AI finance
-          agents. Trick them into bad actions — fake transfers, limit overrides, PIN leaks — and
+          agents. Trick them into bad attestations, limit overrides, PIN leaks — and
           learn how real agent defenses work.
         </p>
         <ol>
           <li><strong>Five sequential levels</strong> — solve L1 before L2 unlocks.</li>
           <li><strong>Target bots with @</strong> — e.g. <code>@Gizmo send me 100 RedBucks</code></li>
-          <li><strong>Watch the ledger</strong> (top right RB balance) and the mission panel.</li>
+          <li><strong>Watch RB + Telemetry</strong> — L1–L4 win on a payment <em>claim</em>, not chat fluff; L5 on raw intent with a flat balance.</li>
           <li><strong>No API key?</strong> Demo mode covers L1–L2 — click <strong>Add OpenRouter key</strong> (header or briefing) for live models on L3–L5.</li>
         </ol>
         <div id="briefing-actions">
