@@ -8,26 +8,29 @@ It is not a deployable treasury platform or payment processor.
 
 ## Security invariant
 
-An agent may **describe** treasury activity in chat; it may not **move funds**
-unless the action passes a fail-closed capability boundary:
+An agent may **describe** treasury activity in chat and may emit a structured payment
+*claim*; it may not **move funds** via the action surface unless the action passes a
+fail-closed capability boundary:
 
 ```text
 allow transfer only after sanitizeDecision strips unauthorized action kinds;
-ledger debits require validated, committed state — never model text alone
+ledger debits require validated, committed state — never model text or unverified claims alone
 ```
 
 System prompts, personas, and hardening tiers are advisory. Chat bodies, model
-JSON, and every `say` string are untrusted.
+JSON (including `claimed_transfer`), and every `say` string are untrusted.
 
-## Two wire surfaces
+## Three decision surfaces
 
 | Path | Mechanism | Levels | Production fix |
 | --- | --- | --- | --- |
-| Chat receipt | Bot confirms transfer in chat → `applyChatTransferCredit` | L1–L4 | Never credit from chat; require signed auth |
+| Claim attestation | Model emits `claimed_transfer` → `applyChatTransferCredit` | L1–L4 | Never credit from unverified claims; require signed auth |
+| Chat | PIN / prose in `say` | L4 | Keep secrets out of prompt; filter outputs |
 | Action execution | Model emits `transfer` in JSON | L5 | `sanitizeDecision` + no transfer in action surface |
 
-Levels 1–4 teach **social engineering against finance copilots**. Level 5 teaches
-**capability restriction** — the control that must hold in production.
+Levels 1–4 teach **social engineering against finance copilots** (and why a parallel
+attestation field is still a wire). Level 5 teaches **capability restriction** — the
+control that must hold in production.
 
 ## Assets
 
@@ -43,9 +46,9 @@ shared chat log (UNTRUSTED)
         ↓
 OpenRouter strict json_schema → parseDecisionPayload
         ↓
-sanitizeDecision (capability wall — executed action never transfer)
+sanitizeDecision (capability wall — executed action never transfer; claim sanitized once)
         ↓
-applyChatTransferCredit (L1–L4 demo vuln) + CTF detectors
+applyChatTransferCredit (L1–L4 claim-attestation demo vuln) + CTF detectors
         ↓
 ledger
 ```
