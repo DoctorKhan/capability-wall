@@ -11,11 +11,12 @@ const MARKUP = `
   <input id="chat-input" />
 `;
 
-/** ui.ts binds to the page at import time, so the markup must exist first. */
 async function loadUi() {
   document.body.innerHTML = MARKUP;
   vi.resetModules();
-  return import("../client/src/ui");
+  const { bindUiDom, setSidePanel, showApp, bindUiHandlers } = await import("../client/src/ui");
+  const dom = bindUiDom();
+  return { ui: { setSidePanel, showApp, bindUiHandlers }, dom, bindUiDom };
 }
 
 const el = (id: string) => document.getElementById(id)!;
@@ -29,85 +30,85 @@ beforeEach(() => {
 
 describe("side panel", () => {
   it("opens on the mission panel", async () => {
-    await loadUi();
+    const { ui, dom } = await loadUi();
+    ui.setSidePanel(dom, "mission");
 
-    expect(el("ctf").classList.contains("hidden")).toBe(false);
-    expect(el("telemetry").classList.contains("hidden")).toBe(true);
-    expect(el("tab-mission").classList.contains("active")).toBe(true);
-    expect(el("tab-mission").getAttribute("aria-selected")).toBe("true");
+    expect(dom.ctf.classList.contains("hidden")).toBe(false);
+    expect(dom.tabMission.classList.contains("active")).toBe(true);
+    expect(dom.tabMission.getAttribute("aria-selected")).toBe("true");
   });
 
   it("switches to the telemetry feed", async () => {
-    const ui = await loadUi();
-    ui.setSidePanel("feed");
+    const { ui, dom } = await loadUi();
+    ui.setSidePanel(dom, "feed");
 
-    expect(el("telemetry").classList.contains("hidden")).toBe(false);
-    expect(el("ctf").classList.contains("hidden")).toBe(true);
-    expect(el("tab-feed").classList.contains("active")).toBe(true);
-    expect(el("tab-feed").getAttribute("aria-selected")).toBe("true");
-    expect(el("tab-mission").getAttribute("aria-selected")).toBe("false");
+    expect(dom.telemetry.classList.contains("hidden")).toBe(false);
+    expect(dom.ctf.classList.contains("hidden")).toBe(true);
+    expect(dom.tabFeed.classList.contains("active")).toBe(true);
+    expect(dom.tabFeed.getAttribute("aria-selected")).toBe("true");
+    expect(dom.tabMission.getAttribute("aria-selected")).toBe("false");
   });
 
   it("switches back to the mission panel", async () => {
-    const ui = await loadUi();
-    ui.setSidePanel("feed");
-    ui.setSidePanel("mission");
+    const { ui, dom } = await loadUi();
+    ui.setSidePanel(dom, "feed");
+    ui.setSidePanel(dom, "mission");
 
-    expect(el("ctf").classList.contains("hidden")).toBe(false);
-    expect(el("telemetry").classList.contains("hidden")).toBe(true);
+    expect(dom.ctf.classList.contains("hidden")).toBe(false);
+    expect(dom.telemetry.classList.contains("hidden")).toBe(true);
   });
 });
 
 describe("showApp", () => {
   it("marks the shell ready", async () => {
-    const ui = await loadUi();
-    expect(el("app-shell").classList.contains("ready")).toBe(false);
+    const { ui, dom } = await loadUi();
+    expect(dom.shell.classList.contains("ready")).toBe(false);
 
-    ui.showApp();
-    expect(el("app-shell").classList.contains("ready")).toBe(true);
+    ui.showApp(dom);
+    expect(dom.shell.classList.contains("ready")).toBe(true);
   });
 });
 
 describe("bindUiHandlers", () => {
   it("switches panels from the tab buttons", async () => {
-    const ui = await loadUi();
-    ui.bindUiHandlers();
+    const { ui, dom } = await loadUi();
+    ui.bindUiHandlers(dom);
 
-    el("tab-feed").click();
-    expect(el("telemetry").classList.contains("hidden")).toBe(false);
+    dom.tabFeed.click();
+    expect(dom.telemetry.classList.contains("hidden")).toBe(false);
 
-    el("tab-mission").click();
-    expect(el("ctf").classList.contains("hidden")).toBe(false);
+    dom.tabMission.click();
+    expect(dom.ctf.classList.contains("hidden")).toBe(false);
   });
 
   it("toggles panels with the M shortcut", async () => {
-    const ui = await loadUi();
-    ui.bindUiHandlers();
+    const { ui, dom } = await loadUi();
+    ui.bindUiHandlers(dom);
 
     pressM();
-    expect(el("telemetry").classList.contains("hidden")).toBe(false);
+    expect(dom.telemetry.classList.contains("hidden")).toBe(false);
 
     pressM();
-    expect(el("ctf").classList.contains("hidden")).toBe(false);
+    expect(dom.ctf.classList.contains("hidden")).toBe(false);
   });
 
   it("ignores M while the operator is typing in chat", async () => {
-    const ui = await loadUi();
-    ui.bindUiHandlers();
-    (el("chat-input") as HTMLInputElement).focus();
+    const { ui, dom } = await loadUi();
+    ui.bindUiHandlers(dom);
+    (dom.chatInput as HTMLInputElement | null)?.focus();
 
     pressM();
 
-    expect(el("ctf").classList.contains("hidden")).toBe(false);
-    expect(el("telemetry").classList.contains("hidden")).toBe(true);
+    expect(dom.ctf.classList.contains("hidden")).toBe(false);
+    expect(dom.telemetry.classList.contains("hidden")).toBe(true);
   });
 
   it("leaves other keys alone", async () => {
-    const ui = await loadUi();
-    ui.bindUiHandlers();
+    const { ui, dom } = await loadUi();
+    ui.bindUiHandlers(dom);
 
     window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyF", bubbles: true }));
 
-    expect(el("ctf").classList.contains("hidden")).toBe(false);
+    expect(dom.ctf.classList.contains("hidden")).toBe(false);
   });
 });

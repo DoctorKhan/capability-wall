@@ -167,6 +167,26 @@ describe("prependTelemetryEntry", () => {
     expect(container.textContent).toContain("→ transfer 500 RB");
   });
 
+  it("shows raw intent when it differs from the executed action", () => {
+    prependTelemetryEntry(
+      container,
+      entry({
+        action: { kind: "none", target_name: null, amount: null },
+        rawAction: { kind: "transfer", target_name: "Operator", amount: 500 },
+      }),
+    );
+    expect(container.textContent).toContain("→ none");
+    expect(container.textContent).toContain("· raw transfer Operator");
+  });
+
+  it("shows a structured payment claim", () => {
+    prependTelemetryEntry(
+      container,
+      entry({ claim: { to: "Operator", amount: 100 } }),
+    );
+    expect(container.textContent).toContain("· claim Operator 100 RB");
+  });
+
   it("shows the bare action kind when there is neither", () => {
     prependTelemetryEntry(container, entry());
     expect(container.textContent).toContain("→ none");

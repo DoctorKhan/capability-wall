@@ -6,17 +6,17 @@ export interface KeyModalOptions {
   onSaved?: () => void;
 }
 
-let bound = false;
+const boundDocuments = new WeakSet<Document>();
 
 function maskKey(key: string): string {
   if (key.length <= 12) return "••••••••";
   return `${key.slice(0, 7)}…${key.slice(-4)}`;
 }
 
-export function openKeyModal(_opts?: KeyModalOptions): void {
-  const modal = document.getElementById("key-modal");
-  const input = document.getElementById("key-input") as HTMLInputElement | null;
-  const current = document.getElementById("key-current");
+export function openKeyModal(_opts?: KeyModalOptions, root: Document = document): void {
+  const modal = root.getElementById("key-modal");
+  const input = root.getElementById("key-input") as HTMLInputElement | null;
+  const current = root.getElementById("key-current");
   if (!modal || !input) return;
 
   const stored = getStoredKey();
@@ -31,36 +31,36 @@ export function openKeyModal(_opts?: KeyModalOptions): void {
   input.focus();
 }
 
-export function closeKeyModal(): void {
-  const modal = document.getElementById("key-modal");
+export function closeKeyModal(root: Document = document): void {
+  const modal = root.getElementById("key-modal");
   if (modal) modal.hidden = true;
 }
 
-export function bindKeyModal(opts: KeyModalOptions = {}): void {
-  if (bound) return;
-  bound = true;
+export function bindKeyModal(opts: KeyModalOptions = {}, root: Document = document): void {
+  if (boundDocuments.has(root)) return;
+  boundDocuments.add(root);
 
-  const modal = document.getElementById("key-modal");
-  const form = document.getElementById("key-form") as HTMLFormElement | null;
-  const input = document.getElementById("key-input") as HTMLInputElement | null;
-  const clearBtn = document.getElementById("key-clear");
-  const cancelBtn = document.getElementById("key-cancel");
-  const openBtn = document.getElementById("key-status");
-  const briefingBtn = document.getElementById("briefing-add-key");
+  const modal = root.getElementById("key-modal");
+  const form = root.getElementById("key-form") as HTMLFormElement | null;
+  const input = root.getElementById("key-input") as HTMLInputElement | null;
+  const clearBtn = root.getElementById("key-clear");
+  const cancelBtn = root.getElementById("key-cancel");
+  const openBtn = root.getElementById("key-status");
+  const briefingBtn = root.getElementById("briefing-add-key");
 
-  openBtn?.addEventListener("click", () => openKeyModal(opts));
-  briefingBtn?.addEventListener("click", () => openKeyModal(opts));
+  openBtn?.addEventListener("click", () => openKeyModal(opts, root));
+  briefingBtn?.addEventListener("click", () => openKeyModal(opts, root));
 
-  cancelBtn?.addEventListener("click", () => closeKeyModal());
+  cancelBtn?.addEventListener("click", () => closeKeyModal(root));
   modal?.addEventListener("click", (e) => {
-    if (e.target === modal) closeKeyModal();
+    if (e.target === modal) closeKeyModal(root);
   });
 
   clearBtn?.addEventListener("click", () => {
     setStoredKey(null);
     if (input) input.value = "";
     opts.onSaved?.();
-    closeKeyModal();
+    closeKeyModal(root);
   });
 
   form?.addEventListener("submit", (e) => {
@@ -68,7 +68,7 @@ export function bindKeyModal(opts: KeyModalOptions = {}): void {
     const value = input?.value.trim() ?? "";
     setStoredKey(value || null);
     opts.onSaved?.();
-    closeKeyModal();
+    closeKeyModal(root);
   });
 }
 
