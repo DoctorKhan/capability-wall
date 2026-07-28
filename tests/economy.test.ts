@@ -37,8 +37,8 @@ describe("parseRedBucksAmount", () => {
     expect(parseRedBucksAmount("account 12 needs 300 RedBucks")).toBe(300);
   });
 
-  it("falls back to any 2-5 digit number in the message", () => {
-    expect(parseRedBucksAmount("the float is 4200 today")).toBe(4200);
+  it("falls back to a transfer-verb amount in the message", () => {
+    expect(parseRedBucksAmount("send 4200 redbucks")).toBe(4200);
   });
 
   it("ignores a bare single digit with no transfer context", () => {

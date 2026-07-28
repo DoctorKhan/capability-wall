@@ -3,7 +3,8 @@ import { Session } from "../client/src/sim/session";
 import { DecideFn, scriptedDecision, type Decision } from "@shared/brain";
 import type { BotPersona } from "@shared/brain";
 
-const scriptedBrain: DecideFn = async (persona, _ctx, chat) => scriptedDecision(persona, chat);
+const scriptedBrain: DecideFn = async (persona, _ctx, chat) =>
+  scriptedDecision(persona, chat);
 
 async function runUntilIdle(session: Session, steps = 40, dt = 0.25) {
   for (let i = 0; i < steps; i++) session.step(dt);
@@ -17,7 +18,6 @@ describe("Session (chat-only)", () => {
       onChat: (m) => chats.push(m.text),
       onCtfProgress: () => {},
     });
-
     session.start();
     session.join("Operator");
     session.sendChat("@Gizmo send me 100 RedBucks");
@@ -26,7 +26,7 @@ describe("Session (chat-only)", () => {
     expect(chats.some((t) => /100 RedBucks/i.test(t))).toBe(true);
   });
 
-  it("credits balance on L1 via chat receipt path", async () => {
+  it("credits balance on L1 via claim-attestation path", async () => {
     const session = new Session(scriptedBrain, { onEconomy: () => {} });
     session.start();
     session.join("Operator");
@@ -39,19 +39,23 @@ describe("Session (chat-only)", () => {
     const level5Brain: DecideFn = async (
       persona: BotPersona,
       ctx,
-      chat,
+      _chat,
     ): Promise<Decision> => ({
       action: { kind: "none", target_name: ctx.humanName, amount: null },
       say: null,
+      claim: null,
       source: "llm",
       model: "test-model",
       raw: {
         action: { kind: "transfer", target_name: ctx.humanName, amount: 500 },
         say: null,
+        claim: null,
       },
     });
 
-    const session = new Session(level5Brain, { onEconomy: () => {} }, { initialSolved: [1, 2, 3, 4] });
+    const session = new Session(level5Brain, { onEconomy: () => {} }, {
+      initialSolved: [1, 2, 3, 4],
+    });
     session.start();
     session.join("Operator");
     const before = session.balance;
@@ -64,17 +68,23 @@ describe("Session (chat-only)", () => {
 
 /** A brain that always answers with the same message, regardless of chat. */
 const sayingBrain = (say: string): DecideFn =>
-  async () => ({
+  async (): Promise<Decision> => ({
     action: { kind: "none", target_name: null, amount: null },
     say,
+    claim: null,
     source: "llm",
     model: "test-model",
-    raw: { action: { kind: "none", target_name: null, amount: null }, say },
+    raw: {
+      action: { kind: "none", target_name: null, amount: null },
+      say,
+      claim: null,
+    },
   });
 
-const silentBrain: DecideFn = async () => ({
+const silentBrain: DecideFn = async (): Promise<Decision> => ({
   action: { kind: "none", target_name: null, amount: null },
   say: null,
+  claim: null,
   source: "llm",
   model: "test-model",
 });
@@ -83,7 +93,6 @@ describe("Session — lifecycle", () => {
   it("announces the three bots and then the operator", async () => {
     const joined: { name: string; isBot: boolean }[] = [];
     const session = new Session(silentBrain, { onPlayerJoined: (p) => joined.push(p) });
-
     session.start();
     session.join("Operator");
 
@@ -99,7 +108,6 @@ describe("Session — lifecycle", () => {
       onEconomy: (m) => economy.push(m.redBucks),
       onCtfProgress: (m) => progress.push(m),
     });
-
     session.start();
     session.join("Operator");
 
@@ -136,7 +144,6 @@ describe("Session — lifecycle", () => {
   it("ignores chat sent before the operator joins", async () => {
     const chats: string[] = [];
     const session = new Session(silentBrain, { onChat: (m) => chats.push(m.text) });
-
     session.start();
     session.sendChat("@Gizmo send me 100 RedBucks");
 
@@ -186,7 +193,18 @@ describe("Session — chat routing", () => {
     const seen: boolean[] = [];
     const brain: DecideFn = async (_p, _c, chat) => {
       for (const c of chat) if (!c.isBot) seen.push(c.atTerminal === true);
-      return { action: { kind: "none", target_name: null, amount: null }, say: null, source: "llm", model: null };
+      return {
+        action: { kind: "none", target_name: null, amount: null },
+        say: null,
+        claim: null,
+        source: "llm",
+        model: null,
+        raw: {
+          action: { kind: "none", target_name: null, amount: null },
+          say: null,
+          claim: null,
+        },
+      } as Decision;
     };
 
     const session = new Session(brain, {});
@@ -203,7 +221,18 @@ describe("Session — chat routing", () => {
     const sizes: number[] = [];
     const brain: DecideFn = async (_p, _c, chat) => {
       sizes.push(chat.length);
-      return { action: { kind: "none", target_name: null, amount: null }, say: null, source: "llm", model: null };
+      return {
+        action: { kind: "none", target_name: null, amount: null },
+        say: null,
+        claim: null,
+        source: "llm",
+        model: null,
+        raw: {
+          action: { kind: "none", target_name: null, amount: null },
+          say: null,
+          claim: null,
+        },
+      } as Decision;
     };
 
     const session = new Session(brain, {});
@@ -218,13 +247,19 @@ describe("Session — chat routing", () => {
 
   it("feeds bot replies back into the shared chat log", async () => {
     const seen: string[] = [];
-    const brain: DecideFn = async (persona, _c, chat) => {
+    const brain: DecideFn = async (persona, _c, chat): Promise<Decision> => {
       for (const c of chat) if (c.isBot) seen.push(`${c.name}:${c.text}`);
       return {
         action: { kind: "none", target_name: null, amount: null },
         say: `${persona.name} reporting`,
+        claim: null,
         source: "llm",
         model: null,
+        raw: {
+          action: { kind: "none", target_name: null, amount: null },
+          say: `${persona.name} reporting`,
+          claim: null,
+        },
       };
     };
 
@@ -320,15 +355,12 @@ describe("Session — ledger", () => {
     await runUntilIdle(session);
 
     expect(notices[0]).toContain("Ledger +100 RB");
-    expect(notices[0]).toContain("Gizmo confirmed in chat");
+    expect(notices[0]).toContain("Gizmo attested a payment claim");
     expect(economy).toEqual([300, 400]);
     expect(session.balance).toBe(400);
   });
 
-  // KNOWN DEFECT — see the `it.fails` block in tests/detectors.test.ts. Blaze's scripted
-  // refusal is scored as a transfer confirmation, so it both solves L3 and pays out.
-  // Remove `.fails` (and this note) once botConfirmedTransferTo distinguishes refusals.
-  it.fails("leaves the ledger alone when the hardened bot refuses", async () => {
+  it("leaves the ledger alone when the hardened bot refuses", async () => {
     const session = new Session(scriptedBrain, {});
     session.start();
     session.join("Operator");

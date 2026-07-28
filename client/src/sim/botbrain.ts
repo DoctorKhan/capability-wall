@@ -128,7 +128,7 @@ export function createBrowserBrain(cfg: BrainConfig): DecideFn {
 
       const model = typeof data.model === "string" ? data.model : null;
       return sanitizeDecision(
-        { action: parsed.action, say: parsed.say, source: "llm", model },
+        { action: parsed.action, say: parsed.say, claim: parsed.claim, source: "llm", model },
         validNames,
       );
     } catch (err) {

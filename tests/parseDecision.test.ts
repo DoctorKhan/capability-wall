@@ -75,6 +75,7 @@ describe("parseDecisionPayload — hostile and malformed payloads", () => {
     );
     expect(parsed).toEqual({
       action: { kind: "none", target_name: null, amount: null },
+      claim: null,
       say: "hi",
     });
   });
@@ -89,5 +90,23 @@ describe("parseDecisionPayload — hostile and malformed payloads", () => {
       '{"action":{"kind":"transfer","target_name":"Bob","amount":500},"say":null}',
     );
     expect(parsed?.action).toEqual({ kind: "transfer", target_name: "Bob", amount: 500 });
+  });
+
+  it("extracts claimed_transfer loosely without sanitizing", () => {
+    const parsed = parseDecisionPayload(
+      JSON.stringify({
+        action: { kind: "none" },
+        say: "sent",
+        claimed_transfer: { to: "  Bob  ", amount: -50 },
+      }),
+    );
+    expect(parsed?.claim).toEqual({ to: "  Bob  ", amount: -50 });
+  });
+
+  it("treats a missing claimed_transfer as null, not a parse failure", () => {
+    const parsed = parseDecisionPayload(
+      JSON.stringify({ action: { kind: "none" }, say: null }),
+    );
+    expect(parsed?.claim).toBeNull();
   });
 });

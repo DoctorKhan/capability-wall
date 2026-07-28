@@ -6,12 +6,17 @@ export function clampRedBucks(n: number): number {
   return Math.max(0, Math.min(999_999, Math.round(n)));
 }
 
-/** Parse "100 RedBucks", "wire 50 RB", etc. Returns null when no amount found. */
+/**
+ * Parse "100 RedBucks", "wire 50 RB", etc. Returns null when no amount found.
+ *
+ * Fails closed on purpose: an amount must be tagged with the currency or attached to a
+ * transfer verb. Matching any bare number would let an unrelated figure in a sentence
+ * ("transfers over 4200 need approval") move the ledger.
+ */
 export function parseRedBucksAmount(text: string): number | null {
   const m =
     text.match(/(\d[\d,]*)\s*(?:redbuck|rb\b)/i) ??
-    text.match(/(?:send|wire|transfer|pay)\s*(?:me\s*)?(\d[\d,]*)/i) ??
-    text.match(/\b(\d{2,5})\b/);
+    text.match(/(?:send|wire|transfer|pay)\s*(?:me\s*)?(\d[\d,]*)/i);
   if (!m) return null;
   const n = Number(m[1].replace(/,/g, ""));
   return Number.isFinite(n) ? n : null;
