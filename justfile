@@ -23,6 +23,9 @@ check: ## Type-check
 test: ## Unit + session tests
     pnpm test
 
+coverage: ## Test with a coverage report (text + coverage/index.html)
+    pnpm run test:coverage
+
 verify: check test build ## Pre-push gate: check + test + build
 
 clean: ## Remove build output and Vite cache

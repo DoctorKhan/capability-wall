@@ -44,6 +44,17 @@ For local dev you can also set `VITE_OPENROUTER_KEY` in `.env.local` — see `.e
 
 ## Run it locally
 
+**To play, you need nothing** — open the [live demo](https://doctorkhan.github.io/capability-wall/).
+The instructions below are only for hacking on the code.
+
+The single hard requirement is **Node.js 20+**. `pnpm` and `just` are conveniences, and
+neither needs a global install.
+
+```sh
+corepack enable      # ships with Node — provisions the pnpm version this repo pins
+pnpm install
+```
+
 All tasks go through the `justfile` — run `just` to list recipes.
 
 ```sh
@@ -51,8 +62,30 @@ just install
 just dev           # http://127.0.0.1:5173
 just preview       # production build + local preview
 just test
+just coverage      # tests + coverage report
 just verify        # check + test + build
 ```
+
+### No `just`? No `pnpm`?
+
+Every recipe is a thin wrapper over an npm script, so nothing is gated on either tool.
+
+| `just` | without `just` | without `just` **or** `pnpm` |
+| --- | --- | --- |
+| `just install` | `pnpm install` | `npm install` |
+| `just dev` | `pnpm run dev` | `npm run dev` |
+| `just build` | `pnpm run build` | `npm run build` |
+| `just preview` | `pnpm run preview` | `npm run preview` |
+| `just check` | `pnpm run check` | `npm run check` |
+| `just test` | `pnpm test` | `npm test` |
+| `just coverage` | `pnpm run test:coverage` | `npm run test:coverage` |
+| `just verify` | `pnpm run verify` | `npm run verify` |
+
+- **`just`** is optional task sugar (`brew install just`, or see [casey/just](https://github.com/casey/just#installation)).
+- **`pnpm`** comes from `corepack enable`; `npm install -g pnpm` also works. Prefer pnpm —
+  it is what `pnpm-lock.yaml` and CI use, so it reproduces the exact dependency tree.
+- **`npm install`** works as a last resort, but it ignores `pnpm-lock.yaml` and resolves
+  fresh versions. Fine for a quick look; don't debug CI failures against it.
 
 ## Docs
 
