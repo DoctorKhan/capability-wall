@@ -2,14 +2,16 @@ import { presentCtfProgress } from "@shared/present";
 import { bindCtfDom, bindMissionStarter, renderCtfView } from "./ctfView";
 
 export class CtfPanel {
-  private dom = bindCtfDom();
+  private dom: ReturnType<typeof bindCtfDom>;
   private currentLevel = 1;
   private solved: number[] = [];
 
   constructor(
     starterButton: HTMLButtonElement,
     private onUseStarter: (text: string) => void,
+    root: Document = document,
   ) {
+    this.dom = bindCtfDom(root);
     bindMissionStarter(starterButton, () => {
       const starter = presentCtfProgress(this.currentLevel, this.solved).mission.starterPrompt;
       if (starter) this.onUseStarter(starter);

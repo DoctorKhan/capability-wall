@@ -1,5 +1,7 @@
 /** DOM-safe chat and telemetry rendering. */
 
+import type { BotAction, TransferClaim } from "@shared/protocol";
+
 export interface ChatLine {
   name: string;
   color: string;
@@ -11,10 +13,26 @@ export interface ChatLine {
 export interface TelemetryEntry {
   name: string;
   color: string;
-  action: { kind: string; target_name?: string | null; amount?: number | null };
+  /** Executed action after sanitize (transfer is always stripped). */
+  action: BotAction;
+  /** Model intent before the capability wall — what L5 observes. */
+  rawAction?: BotAction | null;
+  /** Structured payment claim — the L1–L4 attestation surface. */
+  claim?: TransferClaim | null;
   source: string;
   say: string | null;
   model: string | null;
+}
+
+function formatAction(action: { kind: string; target_name?: string | null; amount?: number | null }): string {
+  const target =
+    action.target_name ?? (action.amount != null ? `${action.amount} RB` : "");
+  return `${action.kind}${target ? " " + target : ""}`;
+}
+
+function formatClaim(claim: TransferClaim): string {
+  const amount = claim.amount != null ? `${claim.amount} RB` : "?";
+  return `${claim.to ?? "?"} ${amount}`;
 }
 
 export function appendChatLine(container: HTMLElement, line: ChatLine, maxLines = 80): void {
@@ -65,12 +83,16 @@ export function prependTelemetryEntry(container: HTMLElement, entry: TelemetryEn
   bold.style.color = entry.color;
   row.appendChild(bold);
 
-  const target =
-    entry.action.target_name ??
-    (entry.action.amount != null ? `${entry.action.amount} RB` : "");
-  row.appendChild(
-    document.createTextNode(` → ${entry.action.kind}${target ? " " + target : ""}`),
-  );
+  row.appendChild(document.createTextNode(` → ${formatAction(entry.action)}`));
+
+  const raw = entry.rawAction;
+  if (raw && (raw.kind !== entry.action.kind || raw.target_name || raw.amount != null)) {
+    row.appendChild(document.createTextNode(` · raw ${formatAction(raw)}`));
+  }
+
+  if (entry.claim) {
+    row.appendChild(document.createTextNode(` · claim ${formatClaim(entry.claim)}`));
+  }
 
   const src = document.createElement("span");
   src.className = "src";
