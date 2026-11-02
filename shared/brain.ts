@@ -5,6 +5,7 @@
 import { parseRedBucksAmount } from "@shared/economy";
 import { BotAction, TransferClaim } from "@shared/protocol";
 import { Hardening } from "@shared/challenges";
+import { simulateAcsToolDecision, type SimulatedAcsDecision } from "@shared/acsSimulation";
 import {
   DEFAULT_CLAIM_AMOUNT,
   LARGE_TRANSFER_LANG,
@@ -114,6 +115,8 @@ export interface Decision {
   source: "llm" | "scripted";
   model: string | null;
   raw?: { action: BotAction | null; say: string | null; claim: TransferClaim | null };
+  /** Local ACS-inspired teaching verdict; absent when no transfer was proposed. */
+  acsSimulation?: SimulatedAcsDecision | null;
 }
 
 export interface ChatEntry {
@@ -207,6 +210,7 @@ export function sanitizeDecision(raw: Decision, validNames: string[]): Decision 
     target_name: typeof a?.target_name === "string" ? a.target_name : null,
     amount: typeof a?.amount === "number" && Number.isFinite(a.amount) ? a.amount : null,
   };
+  const acsSimulation = simulateAcsToolDecision(rawAction);
   const claim = sanitizeClaim(raw.claim);
   return {
     action: {
@@ -218,6 +222,7 @@ export function sanitizeDecision(raw: Decision, validNames: string[]): Decision 
     claim,
     source: raw.source,
     model: raw.model ?? null,
+    acsSimulation,
     raw: {
       action: rawAction,
       say: typeof raw.say === "string" ? raw.say : null,

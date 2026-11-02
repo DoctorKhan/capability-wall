@@ -1,6 +1,7 @@
 /** DOM-safe chat and telemetry rendering. */
 
 import type { BotAction, TransferClaim } from "@shared/protocol";
+import type { SimulatedAcsDecision } from "@shared/acsSimulation";
 
 export interface ChatLine {
   name: string;
@@ -22,6 +23,7 @@ export interface TelemetryEntry {
   source: string;
   say: string | null;
   model: string | null;
+  acsSimulation?: SimulatedAcsDecision | null;
 }
 
 function formatAction(action: { kind: string; target_name?: string | null; amount?: number | null }): string {
@@ -92,6 +94,13 @@ export function prependTelemetryEntry(container: HTMLElement, entry: TelemetryEn
 
   if (entry.claim) {
     row.appendChild(document.createTextNode(` · claim ${formatClaim(entry.claim)}`));
+  }
+
+  if (entry.acsSimulation) {
+    const gate = document.createElement("span");
+    gate.className = "src";
+    gate.textContent = ` · ACS-inspired simulation ${entry.acsSimulation.decision.toUpperCase()} ${entry.acsSimulation.method}: ${entry.acsSimulation.reasoning}`;
+    row.appendChild(gate);
   }
 
   const src = document.createElement("span");

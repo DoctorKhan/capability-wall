@@ -160,6 +160,7 @@ export function bootstrap(options: BootstrapOptions = {}): AppHandle {
           source: m.source,
           say: m.say,
           model: m.model,
+          acsSimulation: m.acsSimulation,
         });
       },
       onCtfProgress: (m) => {

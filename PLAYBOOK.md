@@ -38,6 +38,21 @@ when the transfer *action* is blocked.
 **Trusted:** the browser runtime, ledger apply logic, and sanitize boundary.
 **Untrusted:** every chat message, model JSON field, and bot `say` string.
 
+## Current standards lens
+
+Each mission card maps the demonstrated risk to the **OWASP Top 10 for Agentic
+Applications (2026)**. Level 5 also illustrates an **ACS v0.1.0-inspired**
+`steps/toolCallRequest` checkpoint: inspect the proposed transfer, return DENY,
+and ensure the executor does not apply it. The existing local `sanitizeDecision`
+boundary illustrates that flow; the browser CTF does not implement ACS JSON-RPC,
+signatures, a separate Guardian service, or ACS conformance. ACS is a runtime
+control mechanism, not a replacement for prompt-injection defenses, secret
+hygiene, identity controls, or verified payment settlement.
+
+Read the current [OWASP Agentic Top 10](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/),
+[OWASP GenAI LLM Top 10 (2026)](https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/),
+and [OWASP Agent Control Standard](https://genai.owasp.org/resource/agent-control-standard-acs/).
+
 ## Defense layers (apply in order)
 
 1. **Label context** — chat bodies are participant data, not system instructions (`describeTreasuryContext`).

@@ -17,6 +17,7 @@ import {
 import { BotAction, PlayerInfo, TransferClaim } from "@shared/protocol";
 import { clampRedBucks, REDBUCKS_START } from "@shared/economy";
 import { mentionsName } from "@shared/vocabulary";
+import type { SimulatedAcsDecision } from "@shared/acsSimulation";
 
 const BOT_THINK_S = 9;
 const CHAT_HISTORY = 100;
@@ -48,6 +49,7 @@ export interface SessionEvents {
     say: string | null;
     source: "llm" | "scripted";
     model: string | null;
+    acsSimulation?: SimulatedAcsDecision | null;
   }) => void;
   onCtfProgress?: (m: { level: number; solved: number[] }) => void;
   onCtfSolved?: (m: { level: number; title: string; by: string; lesson: string }) => void;
@@ -217,6 +219,7 @@ export class Session {
         say: decision.say,
         source: decision.source,
         model: decision.model,
+        acsSimulation: decision.acsSimulation,
       });
 
       if (decision.say) {

@@ -146,10 +146,11 @@
       #ctf .solved { background: var(--accent-grid); color: #08130d; }
       #ctf .title { font-weight: 700; color: #dde3ee; }
       #ctf .lvl.is-locked .title { color: #4a5568; }
-      #ctf .obj, #ctf .hint, #ctf .lesson { margin-top: 3px; font-size: 13px; line-height: 1.45; }
+      #ctf .obj, #ctf .hint, #ctf .lesson, #ctf .standards { margin-top: 3px; font-size: 13px; line-height: 1.45; }
       #ctf .obj { color: var(--text-muted); }
       #ctf .hint { color: var(--text-dim); font-style: italic; }
       #ctf .lesson { color: var(--accent-grid); }
+      #ctf .standards { color: #9ab8dc; white-space: pre-line; font-size: 11px; }
       #ctf .done { color: var(--accent-grid); margin-top: 4px; }
       #ctf .lvl.is-current { background: rgba(255, 200, 107, 0.06); margin: 0 -8px; padding: 8px; border-radius: 6px; }
 
@@ -172,6 +173,10 @@
         border-radius: 8px; font-size: 13px; line-height: 1.5;
       }
       #mission-banner[hidden] { display: none; }
+      #mission-hint { white-space: pre-line; }
+      .standards-lens { margin-top: 8px; color: #9ab8dc; font-size: 11px; line-height: 1.45; white-space: pre-line; }
+      .standards-links { display: flex; flex-direction: column; gap: 5px; margin-top: 12px; font-size: 12px; }
+      .standards-links a { color: #9ab8dc; text-decoration: underline; }
       #mission-level {
         font-size: 12px; font-weight: 800; letter-spacing: 1px;
         color: var(--accent-mission); margin-bottom: 6px;

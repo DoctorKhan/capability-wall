@@ -61,6 +61,12 @@ tenancy rather than untrusted context.
 
 ## Explicit non-goals
 
+The CTF uses an ACS-inspired local checkpoint to explain how a Guardian could
+deny a proposed effect before execution. It does not implement ACS JSON-RPC,
+signatures, a separate Guardian, or protocol conformance. Risk labels in mission
+cards map to the OWASP Top 10 for Agentic Applications (2026); they are not a
+compliance claim.
+
 - Production payment rails or real fund movement
 - Server-side session storage or shared secrets in the repository
 - Prompt hardening as the sole control (levels 1–3 demonstrate why it fails)

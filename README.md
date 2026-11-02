@@ -30,6 +30,16 @@ Level 5 is the point: **limit an agent's capabilities, not just its instructions
 `tests/sanitize.test.ts`. L1–L4 credit the ledger from an unverified `claimed_transfer`
 field (not from chat prose); telemetry shows executed · raw · claim · say.
 
+Mission cards map the levels to the **OWASP Top 10 for Agentic Applications (2026)**.
+When a transfer is proposed, telemetry also shows an ACS-inspired
+`steps/toolCallRequest → DENY` teaching trace beside the stripped action. This is a
+local simulation of the Guardian decision point, not an ACS JSON-RPC client or
+conformance claim. See [PLAYBOOK.md](PLAYBOOK.md) for the crosswalk and scope.
+
+Current references: [OWASP Agentic Top 10 (2026)](https://genai.owasp.org/resource/owasp-top-10-for-agentic-applications-for-2026/),
+[OWASP GenAI LLM Top 10 (2026)](https://genai.owasp.org/resource/owasp-genai-llm-top-10-2026/),
+and [OWASP Agent Control Standard](https://genai.owasp.org/resource/agent-control-standard-acs/).
+
 ## Demo mode vs live models
 
 | Mode | Levels | How |

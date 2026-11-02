@@ -9,17 +9,27 @@ export interface CtfDom {
   missionWin: HTMLElement;
   missionStarter: HTMLElement;
   missionHint: HTMLElement;
+  missionStandards: HTMLElement;
   ladderRoot: HTMLElement;
 }
 
 export function bindCtfDom(root: Document = document): CtfDom {
+  const missionBanner = root.getElementById("mission-banner")!;
+  let missionStandards = root.getElementById("mission-standards");
+  if (!missionStandards) {
+    missionStandards = root.createElement("div");
+    missionStandards.id = "mission-standards";
+    missionStandards.className = "standards-lens";
+    missionBanner.appendChild(missionStandards);
+  }
   return {
-    missionBanner: root.getElementById("mission-banner")!,
+    missionBanner,
     missionLevel: root.getElementById("mission-level")!,
     missionObjective: root.getElementById("mission-objective")!,
     missionWin: root.getElementById("mission-win")!,
     missionStarter: root.getElementById("mission-starter")!,
     missionHint: root.getElementById("mission-hint")!,
+    missionStandards,
     ladderRoot: root.getElementById("ctf-levels")!,
   };
 }
@@ -32,6 +42,7 @@ export function renderCtfView(dom: CtfDom, view: CtfProgressView): void {
     dom.missionWin.textContent = view.mission.winCondition;
     dom.missionStarter.textContent = view.mission.starterPrompt;
     dom.missionHint.textContent = view.mission.hint;
+    dom.missionStandards.textContent = view.mission.standards;
   }
 
   dom.ladderRoot.innerHTML = "";
@@ -79,6 +90,12 @@ export function renderCtfView(dom: CtfDom, view: CtfProgressView): void {
       lesson.className = "lesson";
       lesson.textContent = "✓ " + row.lesson;
       body.appendChild(lesson);
+    }
+    if (row.standards) {
+      const standards = document.createElement("div");
+      standards.className = "standards";
+      standards.textContent = row.standards;
+      body.appendChild(standards);
     }
 
     el.appendChild(body);

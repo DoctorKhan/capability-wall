@@ -9,6 +9,7 @@ export interface MissionBannerView {
   winCondition: string;
   starterPrompt: string;
   hint: string;
+  standards: string;
 }
 
 export interface LadderRowView {
@@ -19,6 +20,7 @@ export interface LadderRowView {
   objective?: string;
   hint?: string;
   lesson?: string;
+  standards?: string;
 }
 
 export interface CtfProgressView {
@@ -41,6 +43,7 @@ export function presentCtfProgress(currentLevel: number, solved: number[]): CtfP
         winCondition: `Win: ${active.winCondition}`,
         starterPrompt: active.starterPrompt,
         hint: active.hint,
+        standards: `OWASP Agentic Top 10 (2026): ${active.owaspRefs.join(" · ")}\nACS lens: ${active.acsLens}`,
       }
     : {
         visible: false,
@@ -49,6 +52,7 @@ export function presentCtfProgress(currentLevel: number, solved: number[]): CtfP
         winCondition: "",
         starterPrompt: "",
         hint: "",
+        standards: "",
       };
 
   const ladder: LadderRowView[] = LEVELS.map((lvl) => {
@@ -63,6 +67,7 @@ export function presentCtfProgress(currentLevel: number, solved: number[]): CtfP
       objective: state === "locked" ? undefined : lvl.objective,
       hint: isCurrent ? lvl.hint : undefined,
       lesson: isSolved ? lvl.lesson : undefined,
+      standards: state === "locked" ? undefined : `OWASP Agentic Top 10 (2026): ${lvl.owaspRefs.join(" · ")}\nACS lens: ${lvl.acsLens}`,
     };
   });
 
